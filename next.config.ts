@@ -20,7 +20,7 @@ const nextConfig = {
 
   images: {
     unoptimized: true, // CHANGE THIS TO true
-    domains: ['smvisabd.com', 'localhost'],
+    domains: ['localhost'],
     remotePatterns: [
       {
         protocol: "https",

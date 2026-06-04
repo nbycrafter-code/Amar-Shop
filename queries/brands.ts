@@ -1,5 +1,5 @@
 // app/queries/brands.ts
-import { Brand } from "@/model/brand-model";
+import { Brand } from "@/models/brand-model";
 import { replaceMongoIdInArray, replaceMongoIdInObject } from "@/lib/convertData";
 
 // Types
@@ -8,6 +8,11 @@ export interface BrandData {
   name: string;
   nameBn: string;
   country: string;
+  icon?: string;
+  iconColor?: string;
+  iconBgColor?: string;
+  image?: string;
+  imageBgColor?: string;
   slug?: string;
   active?: boolean;
   created_at?: Date;
@@ -19,6 +24,11 @@ export interface BrandResponse {
   name: string;
   nameBn: string;
   country: string;
+  icon?: string;
+  iconColor?: string;
+  iconBgColor?: string;
+  image?: string;
+  imageBgColor?: string;
   slug: string;
   active: boolean;
   created_at: Date;
@@ -33,7 +43,7 @@ export async function getAllBrands(): Promise<BrandResponse[]> {
 
 // Get active brands only
 export async function getBrands(): Promise<BrandResponse[]> {
-  const brands = await Brand.find({ active: true }).sort({ name: 1 }).lean();
+  const brands = await Brand.find({ active: true }).sort({ created_at: -1 }).lean();
   return replaceMongoIdInArray(brands) as BrandResponse[];
 }
 
@@ -61,7 +71,8 @@ export async function getBrandBySlug(slug: string): Promise<BrandResponse | null
 export async function createBrandQuery(brandData: BrandData): Promise<BrandResponse> {
   try {
     const brand = await Brand.create(brandData);
-    return JSON.parse(JSON.stringify(brand)) as BrandResponse;
+    const brandObj = brand.toObject();
+    return replaceMongoIdInObject(brandObj) as BrandResponse;
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : "Failed to create brand");
   }
@@ -73,7 +84,7 @@ export async function updateBrandQuery(brandId: string, brandData: Partial<Brand
     const brand = await Brand.findByIdAndUpdate(
       brandId,
       { ...brandData, updated_at: new Date() },
-      { new: true }
+      { new: true, runValidators: true }
     ).lean();
     return replaceMongoIdInObject(brand) as BrandResponse | null;
   } catch (error) {

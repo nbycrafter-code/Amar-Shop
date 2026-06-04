@@ -1,5 +1,5 @@
 // app/queries/colors.ts
-import { Color } from "@/model/color-model";
+import { Color } from "@/models/color-model";
 import { replaceMongoIdInArray, replaceMongoIdInObject } from "@/lib/convertData";
 
 // Types

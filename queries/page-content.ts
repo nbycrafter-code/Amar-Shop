@@ -1,5 +1,5 @@
 // queries/page-content.ts
-import { PageContent } from "@/model/page-content-model";
+import { PageContent } from "@/models/page-content-model";
 import { connectDB } from "@/lib/db";
 
 export interface PageContentType {

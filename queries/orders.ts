@@ -1,5 +1,5 @@
 // app/queries/orders.ts
-import { Order, OrderItem } from "@/model/order-model";
+import { Order, OrderItem } from "@/models/order-model";
 
 // Types
 export interface OrderData {
@@ -48,36 +48,47 @@ function generateOrderId(): string {
 }
 
 // Create new order
-export async function createOrderQuery(orderData: OrderData): Promise<OrderResponse> {
-  try {    
-    // Validate required fields
+// app/queries/orders.ts (partial - updated createOrderQuery)
+export async function createOrderQuery(orderData: any): Promise<OrderResponse> {
+  try {
+    // ✅ Validate required fields including customerId and customerEmail
     if (!orderData.customerName || !orderData.customerAddress || !orderData.customerPhone) {
       throw new Error("Customer name, address, and phone are required");
     }
-    
+
+    if (!orderData.customerId) {
+      throw new Error("Customer ID is required");
+    }
+
+    if (!orderData.customerEmail) {
+      throw new Error("Customer email is required");
+    }
+
     if (!orderData.items || orderData.items.length === 0) {
       throw new Error("At least one item is required");
     }
-    
+
     // Generate unique order ID
     let orderId = generateOrderId();
     let existingOrder = await Order.findOne({ orderId });
     let attempts = 0;
     const maxAttempts = 5;
-    
+
     while (existingOrder && attempts < maxAttempts) {
       orderId = generateOrderId();
       existingOrder = await Order.findOne({ orderId });
       attempts++;
     }
-    
+
     if (existingOrder) {
       throw new Error("Failed to generate unique order ID");
     }
-    
-    // Create order with explicit orderId
+
+    // ✅ Create order with all fields
     const order = new Order({
       orderId,
+      customerId: orderData.customerId,
+      customerEmail: orderData.customerEmail,
       customerName: orderData.customerName,
       customerAddress: orderData.customerAddress,
       customerPhone: orderData.customerPhone,
@@ -86,15 +97,20 @@ export async function createOrderQuery(orderData: OrderData): Promise<OrderRespo
       deliveryCharge: orderData.deliveryCharge || 0,
       total: orderData.total,
       paymentMethod: orderData.paymentMethod || "cash_on_delivery",
+      paymentStatus: orderData.paymentStatus || "pending",
+      orderStatus: orderData.orderStatus || "pending",
       specialInstructions: orderData.specialInstructions || null,
+      userId: orderData.userId || orderData.customerId,
     });
-    
+
     const savedOrder = await order.save();
     const orderObject = savedOrder.toObject();
-    
+
     return {
       ...orderObject,
       _id: orderObject._id.toString(),
+      customerId: orderObject.customerId?.toString(),
+      userId: orderObject.userId?.toString(),
     } as OrderResponse;
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : "Failed to create order");
@@ -106,7 +122,7 @@ export async function getOrderById(orderId: string): Promise<OrderResponse | nul
   try {
     const order = await Order.findById(orderId).lean();
     if (!order) return null;
-    
+
     return {
       ...order,
       _id: order._id.toString(),
@@ -121,7 +137,7 @@ export async function getOrderByOrderId(orderId: string): Promise<OrderResponse 
   try {
     const order = await Order.findOne({ orderId }).lean();
     if (!order) return null;
-    
+
     return {
       ...order,
       _id: order._id.toString(),
@@ -157,6 +173,14 @@ export async function getOrdersByPhone(phone: string): Promise<OrderResponse[]> 
   }
 }
 
+export async function getOrdersByUserId(userId: string) {
+  const orders = await Order.find({ userId: userId }).sort({ createdAt: -1 }).lean();
+  return orders.map(order => ({
+    ...order,
+    _id: order._id.toString(),
+  })) as OrderResponse[];
+}
+
 // Update order status
 export async function updateOrderStatusQuery(
   orderId: string,
@@ -168,9 +192,9 @@ export async function updateOrderStatusQuery(
       { orderStatus, updatedAt: new Date() },
       { new: true }
     ).lean();
-    
+
     if (!order) return null;
-    
+
     return {
       ...order,
       _id: order._id.toString(),
@@ -191,9 +215,9 @@ export async function updatePaymentStatusQuery(
       { paymentStatus, updatedAt: new Date() },
       { new: true }
     ).lean();
-    
+
     if (!order) return null;
-    
+
     return {
       ...order,
       _id: order._id.toString(),
@@ -211,9 +235,9 @@ export async function cancelOrderQuery(orderId: string): Promise<OrderResponse |
       { orderStatus: "cancelled", updatedAt: new Date() },
       { new: true }
     ).lean();
-    
+
     if (!order) return null;
-    
+
     return {
       ...order,
       _id: order._id.toString(),
@@ -235,11 +259,11 @@ export async function deleteOrderQuery(orderId: string): Promise<boolean> {
 
 // Get all orders with pagination and filters (for admin)
 export async function getAllOrdersAdmin(filter: any = {}, page: number = 1, limit: number = 10): Promise<{ orders: OrderResponse[], total: number, page: number, totalPages: number }> {
-  try {    
+  try {
     const skip = (page - 1) * limit;
-    
+
     const query: any = {};
-    
+
     // Apply filters
     if (filter.orderStatus) {
       query.orderStatus = filter.orderStatus;
@@ -260,7 +284,7 @@ export async function getAllOrdersAdmin(filter: any = {}, page: number = 1, limi
         $lte: new Date(filter.endDate)
       };
     }
-    
+
     const [orders, total] = await Promise.all([
       Order.find(query)
         .sort({ createdAt: -1 })
@@ -269,12 +293,12 @@ export async function getAllOrdersAdmin(filter: any = {}, page: number = 1, limi
         .lean(),
       Order.countDocuments(query)
     ]);
-    
+
     const formattedOrders = orders.map(order => ({
       ...order,
       _id: order._id.toString(),
     })) as OrderResponse[];
-    
+
     return {
       orders: formattedOrders,
       total,
@@ -288,7 +312,7 @@ export async function getAllOrdersAdmin(filter: any = {}, page: number = 1, limi
 
 // Get order statistics for admin dashboard
 export async function getOrderStatistics(): Promise<OrderStatistics> {
-  try {    
+  try {
     const [
       totalOrders,
       pendingOrders,
@@ -323,7 +347,7 @@ export async function getOrderStatistics(): Promise<OrderStatistics> {
         createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
       })
     ]);
-    
+
     return {
       totalOrders,
       pendingOrders,
@@ -342,6 +366,119 @@ export async function getOrderStatistics(): Promise<OrderStatistics> {
   }
 }
 
+// Get all orders for a specific user
+export async function getUserOrders(userId: string) {
+  try {
+    const orders = await Order.find({ user_id: userId })
+      .populate('items.product')
+      .populate('shipping_address')
+      .populate('billing_address')
+      .sort({ created_at: -1 });
+
+    return orders;
+  } catch (error) {
+    console.error("Error fetching user orders:", error);
+    return [];
+  }
+}
+
+// Get order with timeline
+export async function getOrderStatusWithTimeline(orderId: string) {
+  try {
+    const order = await Order.findById(orderId)
+      .populate('items.product')
+      .populate('shipping_address')
+      .populate('billing_address');
+
+    if (!order) {
+      return null;
+    }
+
+    // Build timeline from order status and history
+    const timeline = [];
+
+    // Order placed
+    timeline.push({
+      status: "ORDER_PLACED",
+      timestamp: order.created_at,
+      description: "Order has been placed successfully",
+      icon: "🛒",
+    });
+
+    // Order confirmed
+    if (order.status === "confirmed" || order.status === "processing" ||
+      order.status === "shipped" || order.status === "delivered") {
+      timeline.push({
+        status: "CONFIRMED",
+        timestamp: order.confirmed_at || order.updated_at,
+        description: "Order has been confirmed",
+        icon: "✅",
+      });
+    }
+
+    // Processing
+    if (order.status === "processing" || order.status === "shipped" || order.status === "delivered") {
+      timeline.push({
+        status: "PROCESSING",
+        timestamp: order.processing_at || order.updated_at,
+        description: "Order is being processed",
+        icon: "⚙️",
+      });
+    }
+
+    // Shipped
+    if (order.status === "shipped" || order.status === "delivered") {
+      timeline.push({
+        status: "SHIPPED",
+        timestamp: order.shipped_at || order.updated_at,
+        description: `Order has been shipped${order.tracking_number ? ` with tracking #${order.tracking_number}` : ''}`,
+        icon: "🚚",
+      });
+    }
+
+    // Out for delivery
+    if (order.status === "out_for_delivery" || order.status === "delivered") {
+      timeline.push({
+        status: "OUT_FOR_DELIVERY",
+        timestamp: order.out_for_delivery_at || order.updated_at,
+        description: "Order is out for delivery",
+        icon: "📦",
+      });
+    }
+
+    // Delivered
+    if (order.status === "delivered") {
+      timeline.push({
+        status: "DELIVERED",
+        timestamp: order.delivered_at || order.updated_at,
+        description: "Order has been delivered successfully",
+        icon: "🎉",
+      });
+    }
+
+    // Cancelled
+    if (order.status === "cancelled") {
+      timeline.push({
+        status: "CANCELLED",
+        timestamp: order.cancelled_at || order.updated_at,
+        description: order.cancel_reason || "Order has been cancelled",
+        icon: "❌",
+      });
+    }
+
+    return {
+      currentStatus: order.status,
+      timeline,
+      estimatedDelivery: order.estimated_delivery,
+      trackingNumber: order.tracking_number,
+      trackingUrl: order.tracking_url,
+    };
+  } catch (error) {
+    console.error("Error fetching order timeline:", error);
+    return null;
+  }
+}
+
 // Update order (admin)
 export async function updateOrderAdmin(orderId: string, updateData: Partial<OrderData>): Promise<OrderResponse | null> {
   try {
@@ -350,9 +487,9 @@ export async function updateOrderAdmin(orderId: string, updateData: Partial<Orde
       { ...updateData, updatedAt: new Date() },
       { new: true }
     ).lean();
-    
+
     if (!order) return null;
-    
+
     return {
       ...order,
       _id: order._id.toString(),
@@ -390,7 +527,7 @@ export async function trackOrderByOrderId(orderId: string): Promise<OrderRespons
   try {
     const order = await Order.findOne({ orderId }).lean();
     if (!order) return null;
-    
+
     return {
       ...order,
       _id: order._id.toString(),
@@ -403,10 +540,10 @@ export async function trackOrderByOrderId(orderId: string): Promise<OrderRespons
 // Get orders by phone number (for customer tracking)
 export async function getOrdersByPhoneNumber(phone: string): Promise<OrderResponse[]> {
   try {
-    const orders = await Order.find({ 
-      customerPhone: { $regex: phone, $options: 'i' } 
+    const orders = await Order.find({
+      customerPhone: { $regex: phone, $options: 'i' }
     }).sort({ createdAt: -1 }).lean();
-    
+
     return orders.map(order => ({
       ...order,
       _id: order._id.toString(),

@@ -1,4 +1,4 @@
-import { Size } from "@/model/size-model";
+import { Size } from "@/models/size-model";
 import { replaceMongoIdInArray, replaceMongoIdInObject } from "@/lib/convertData";
 
 // Types

@@ -8,7 +8,7 @@ import Link from "next/link";
 
 export default function Header() {
   const { settings, loading } = useSettings();
-  const { isBn } = useApp();
+  const { language } = useLanguage(); // ✅ যোগ করুন
 
   if (loading) {
     return (

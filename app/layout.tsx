@@ -1,20 +1,37 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
+// app/layout.tsx
+export const dynamic = "force-dynamic";
+import { LanguageProvider } from "@/context/LanguageContext";
+import { getSetting } from "@/queries/settings";
 
-const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "MegaStore - Your One Stop Shop",
-  description: "Best products at best prices",
-};
+export async function generateMetadata() {
+  const settings = await getSetting();
+  return {
+    icons: {
+      icon: [
+        { url: settings?.favicon, sizes: 'any' },
+        { url: settings?.favicon, sizes: '16x16', type: 'image/png' },
+        { url: settings?.favicon, sizes: '32x32', type: 'image/png' },
+      ],
+      apple: [
+        { url: settings?.favicon, sizes: '180x180', type: 'image/png' },
+      ],
+    },
+    manifest: '/site.webmanifest',
+  }
+}
 
-export default function RootLayout({ children }) {
-  
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        {children}
+      <body suppressHydrationWarning>
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

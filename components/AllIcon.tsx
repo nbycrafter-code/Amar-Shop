@@ -1,3 +1,5 @@
+'use client'
+
 import * as Icons from "lucide-react";
 import { useState } from "react";
 import { Search, X } from "lucide-react";

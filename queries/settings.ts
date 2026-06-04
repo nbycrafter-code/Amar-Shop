@@ -1,5 +1,5 @@
 // queries/settings.ts
-import { Settings } from "@/model/settings-model";
+import { Settings } from "@/models/settings-model";
 
 export interface SettingsType {
   siteName: string;
@@ -35,7 +35,7 @@ export interface SettingsType {
 }
 
 // Get all settings
-export async function getSettings(): Promise<SettingsType | null> {
+export async function getSetting(): Promise<SettingsType | null> {
   try {
     const settings = await Settings.findOne({ active: true }).lean();
     return settings as SettingsType;
