@@ -1,28 +1,56 @@
 @import "tailwindcss";
 
+/* app/globals.css - এ যোগ করুন */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Theme variables will be injected dynamically */
+  --primary-color: #3B82F6;
+  --secondary-color: #10B981;
+  --accent-color: #F59E0B;
+  --text-color: #1F2937;
+  --heading-color: #111827;
+  --background-color: #FFFFFF;
+  --card-background: #FFFFFF;
+  --border-color: #E5E7EB;
+  --border-radius: 0.5rem;
+  --font-family: 'Inter', sans-serif;
+  --heading-font: 'Poppins', sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Dynamic theme classes */
+.theme-modern {
+  --primary-color: #3B82F6;
+  --secondary-color: #10B981;
+  --border-radius: 0.5rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.theme-classic {
+  --primary-color: #8B4513;
+  --secondary-color: #DAA520;
+  --border-radius: 0.25rem;
 }
 
+.theme-dark {
+  --background-color: #0F172A;
+  --text-color: #F1F5F9;
+  --card-background: #1E293B;
+  --border-color: #334155;
+}
+
+/* Apply variables */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: var(--font-family);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--heading-font);
+  color: var(--heading-color);
+}
+
+button.primary {
+  background-color: var(--primary-color);
+  border-radius: var(--border-radius);
 }
 
 /* Smooth transitions for all interactive elements */

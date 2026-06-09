@@ -7,9 +7,24 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Image from "next/image";
 
-export const PageSet = () => {
+interface PageSetProps {
+  settings?: any; // settings prop যোগ করা হলো
+}
+
+export const PageSet = ({ settings = {} }: PageSetProps) => {
   const { language } = useLanguage();
   const isBn = language === "bn";
+  
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#d4382c";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const successColor = settings?.successColor || "#10B981";
+  const warningColor = settings?.warningColor || "#F59E0B";
+  const errorColor = settings?.errorColor || "#EF4444";
+  const hoverBg = settings?.hoverBackground || "#F3F4F6";
   
   const {
     compareList,
@@ -47,8 +62,9 @@ export const PageSet = () => {
     uncategorized: isBn ? "অশ্রেণীবদ্ধ" : "Uncategorized",
     generic: isBn ? "জেনেরিক" : "Generic",
     wantToCompareMore: isBn ? "আরও তুলনা করতে চান?" : "Want to compare more?",
-    youCanCompare: isBn => `আপনি সর্বোচ্চ ৪টি পণ্য তুলনা করতে পারেন। আরও ${4 - compareList.length}টি পণ্য যোগ করুন যাতে ভালো সিদ্ধান্ত নিতে পারেন।`,
-    youCanCompareEn: (remaining) => `You can compare up to 4 products. Add ${remaining} more product${remaining !== 1 ? 's' : ''} to make better decision.`,
+    youCanCompare: (remaining) => isBn 
+      ? `আপনি সর্বোচ্চ ৪টি পণ্য তুলনা করতে পারেন। আরও ${remaining}টি পণ্য যোগ করুন যাতে ভালো সিদ্ধান্ত নিতে পারেন।`
+      : `You can compare up to 4 products. Add ${remaining} more product${remaining !== 1 ? 's' : ''} to make better decision.`,
     browseMore: isBn ? "আরও পণ্য ব্রাউজ করুন →" : "Browse more products →",
     bestValuePick: isBn ? "সেরা মূল্যের পছন্দ" : "Best Value Pick",
     bestValueDesc: (name) => isBn 
@@ -106,16 +122,16 @@ export const PageSet = () => {
   };
 
   return (
-    <div className="flex-1 bg-gray-50 min-h-screen">
+    <div className="flex-1" style={{ backgroundColor: hoverBg, minHeight: '100vh' }}>
       <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <Scale className="w-7 h-7 text-red-500" />
+            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2" style={{ color: textColor }}>
+              <Scale className="w-7 h-7" style={{ color: primaryColor }} />
               {texts.compareProducts}
             </h1>
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="text-sm mt-1" style={{ color: textMuted }}>
               {texts.compareDesc}
             </p>
           </div>
@@ -123,7 +139,10 @@ export const PageSet = () => {
           {compareList.length > 0 && (
             <button
               onClick={handleClearAll}
-              className="flex items-center gap-2 px-4 py-2 text-red-500 border border-red-500 rounded-lg hover:bg-red-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
+              style={{ color: errorColor, border: `1px solid ${errorColor}` }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${errorColor}10`}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <Trash2 className="w-4 h-4" />
               {texts.clearAll}
@@ -132,23 +151,29 @@ export const PageSet = () => {
         </div>
 
         {/* Main Content */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div 
+          className="rounded-2xl shadow-sm overflow-hidden"
+          style={{ backgroundColor: '#FFFFFF', border: `1px solid ${borderColor}` }}
+        >
           {compareList.length === 0 ? (
             // Empty State
             <div className="flex flex-col items-center justify-center py-16 md:py-24">
-              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Scale className="w-12 h-12 text-gray-400" />
+              <div className="w-24 h-24 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: hoverBg }}>
+                <Scale className="w-12 h-12" style={{ color: textMuted }} />
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">
+              <h3 className="text-xl font-semibold mb-2" style={{ color: textColor }}>
                 {texts.noProducts}
               </h3>
-              <p className="text-gray-500 text-center max-w-md mb-6">
+              <p className="text-center max-w-md mb-6" style={{ color: textMuted }}>
                 {texts.noProductsDesc}
               </p>
               <Link
                 href="/shop"
                 onClick={() => setIsCompareOpen(false)}
-                className="px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
+                className="px-6 py-2.5 text-white font-medium rounded-lg transition-colors"
+                style={{ backgroundColor: primaryColor }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
               >
                 {texts.browseProducts}
               </Link>
@@ -159,9 +184,9 @@ export const PageSet = () => {
               <table className="w-full border-collapse">
                 <tbody>
                   {/* Header with Product Names */}
-                  <tr className="bg-gradient-to-r from-gray-50 to-white">
-                    <td className="w-36 p-4 border-b border-gray-200 bg-gray-50/50">
-                      <div className="font-semibold text-gray-700">{texts.products}</div>
+                  <tr style={{ background: `linear-gradient(135deg, ${hoverBg}, #FFFFFF)` }}>
+                    <td className="w-36 p-4 border-b" style={{ borderBottomColor: borderColor, backgroundColor: hoverBg }}>
+                      <div className="font-semibold" style={{ color: textMuted }}>{texts.products}</div>
                     </td>
                     {compareList.map((product) => {
                       const hasDiscount = product.discount > 0 || (product.oldPrice && product.oldPrice > product.price);
@@ -171,18 +196,19 @@ export const PageSet = () => {
                       return (
                         <td
                           key={product.id}
-                          className="p-4 border-b border-gray-200 min-w-[260px] align-top"
+                          className="p-4 border-b min-w-[260px] align-top"
+                          style={{ borderBottomColor: borderColor }}
                         >
                           <div className="relative">
                             {/* Badges */}
                             <div className="absolute top-0 left-0 flex gap-1">
                               {isNew && (
-                                <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                <span className="text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: successColor }}>
                                   {texts.new}
                                 </span>
                               )}
                               {isSale && hasDiscount && (
-                                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                <span className="text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: primaryColor }}>
                                   {texts.sale}
                                 </span>
                               )}
@@ -190,14 +216,27 @@ export const PageSet = () => {
                             
                             <button
                               onClick={() => handleRemoveFromCompare(product.id, getProductName(product))}
-                              className="absolute -top-2 -right-2 p-1 bg-white rounded-full shadow-sm text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all z-10"
+                              className="absolute -top-2 -right-2 p-1 bg-white rounded-full shadow-sm transition-all z-10"
+                              style={{ color: textMuted }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = errorColor;
+                                e.currentTarget.style.backgroundColor = `${errorColor}10`;
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = textMuted;
+                                e.currentTarget.style.backgroundColor = '#FFFFFF';
+                              }}
                               aria-label={texts.remove}
                             >
                               <X className="w-4 h-4" />
                             </button>
                             
                             <Link href={`/product/${product.slug}`}>
-                              <h3 className="text-base font-semibold text-gray-900 hover:text-red-500 transition-colors line-clamp-2 pr-6 mt-6">
+                              <h3 className="text-base font-semibold line-clamp-2 pr-6 mt-6 transition-colors"
+                                style={{ color: textColor }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                                onMouseLeave={(e) => e.currentTarget.style.color = textColor}
+                              >
                                 {getProductName(product)}
                               </h3>
                             </Link>
@@ -209,13 +248,17 @@ export const PageSet = () => {
 
                   {/* Product Images */}
                   <tr>
-                    <td className="p-4 border-b border-gray-200 bg-gray-50/50 text-sm font-medium text-gray-600">
+                    <td className="p-4 border-b text-sm font-medium" style={{ borderBottomColor: borderColor, backgroundColor: hoverBg, color: textMuted }}>
                       {texts.image}
                     </td>
                     {compareList.map((product) => (
-                      <td key={product.id} className="p-4 border-b border-gray-200">
+                      <td key={product.id} className="p-4 border-b" style={{ borderBottomColor: borderColor }}>
                         <Link href={`/product/${product.id}`}>
-                          <div className="aspect-square bg-gray-50 rounded-xl overflow-hidden max-w-[200px] mx-auto hover:shadow-md transition-shadow">
+                          <div className="aspect-square rounded-xl overflow-hidden max-w-[200px] mx-auto transition-shadow"
+                            style={{ backgroundColor: hoverBg }}
+                            onMouseEnter={(e) => e.currentTarget.style.boxShadow = `0 0 0 2px ${primaryColor}`}
+                            onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
+                          >
                             <img
                               src={product.image}
                               alt={getProductName(product)}
@@ -229,22 +272,22 @@ export const PageSet = () => {
 
                   {/* Price */}
                   <tr>
-                    <td className="p-4 border-b border-gray-200 bg-gray-50/50 text-sm font-medium text-gray-600">
+                    <td className="p-4 border-b text-sm font-medium" style={{ borderBottomColor: borderColor, backgroundColor: hoverBg, color: textMuted }}>
                       {texts.price}
                     </td>
                     {compareList.map((product) => (
-                      <td key={product.id} className="p-4 border-b border-gray-200">
+                      <td key={product.id} className="p-4 border-b" style={{ borderBottomColor: borderColor }}>
                         <div>
-                          <span className="text-xl font-bold text-red-500">
+                          <span className="text-xl font-bold" style={{ color: primaryColor }}>
                             ${product.price}
                           </span>
                           {product.oldPrice && (
-                            <span className="text-sm text-gray-400 line-through ml-2">
+                            <span className="text-sm line-through ml-2" style={{ color: textMuted }}>
                               ${product.oldPrice}
                             </span>
                           )}
                           {product.discount != 0 && (
-                            <span className="ml-2 text-xs bg-green-100 text-green-600 px-1.5 py-0.5 rounded">
+                            <span className="ml-2 text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: `${successColor}20`, color: successColor }}>
                               -{product.discount}%
                             </span>
                           )}
@@ -255,11 +298,11 @@ export const PageSet = () => {
 
                   {/* Rating */}
                   <tr>
-                    <td className="p-4 border-b border-gray-200 bg-gray-50/50 text-sm font-medium text-gray-600">
+                    <td className="p-4 border-b text-sm font-medium" style={{ borderBottomColor: borderColor, backgroundColor: hoverBg, color: textMuted }}>
                       {texts.rating}
                     </td>
                     {compareList.map((product) => (
-                      <td key={product.id} className="p-4 border-b border-gray-200">
+                      <td key={product.id} className="p-4 border-b" style={{ borderBottomColor: borderColor }}>
                         <div className="flex items-center gap-1">
                           {[...Array(5)].map((_, i) => (
                             <Star
@@ -272,7 +315,7 @@ export const PageSet = () => {
                               )}
                             />
                           ))}
-                          <span className="text-sm text-gray-600 ml-1">
+                          <span className="text-sm ml-1" style={{ color: textMuted }}>
                             ({product.reviewCount || 0})
                           </span>
                         </div>
@@ -282,23 +325,23 @@ export const PageSet = () => {
 
                   {/* Availability */}
                   <tr>
-                    <td className="p-4 border-b border-gray-200 bg-gray-50/50 text-sm font-medium text-gray-600">
+                    <td className="p-4 border-b text-sm font-medium" style={{ borderBottomColor: borderColor, backgroundColor: hoverBg, color: textMuted }}>
                       {texts.availability}
                     </td>
                     {compareList.map((product) => (
-                      <td key={product.id} className="p-4 border-b border-gray-200">
+                      <td key={product.id} className="p-4 border-b" style={{ borderBottomColor: borderColor }}>
                         <div className="flex items-center gap-2">
                           {product.stock ? (
                             <>
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                              <span className="text-sm font-medium text-green-600">
+                              <CheckCircle className="w-4 h-4" style={{ color: successColor }} />
+                              <span className="text-sm font-medium" style={{ color: successColor }}>
                                 {texts.inStock}
                               </span>
                             </>
                           ) : (
                             <>
-                              <AlertCircle className="w-4 h-4 text-red-500" />
-                              <span className="text-sm font-medium text-red-500">
+                              <AlertCircle className="w-4 h-4" style={{ color: errorColor }} />
+                              <span className="text-sm font-medium" style={{ color: errorColor }}>
                                 {texts.outOfStock}
                               </span>
                             </>
@@ -310,12 +353,12 @@ export const PageSet = () => {
 
                   {/* Category */}
                   <tr>
-                    <td className="p-4 border-b border-gray-200 bg-gray-50/50 text-sm font-medium text-gray-600">
+                    <td className="p-4 border-b text-sm font-medium" style={{ borderBottomColor: borderColor, backgroundColor: hoverBg, color: textMuted }}>
                       {texts.category}
                     </td>
                     {compareList.map((product) => (
-                      <td key={product.id} className="p-4 border-b border-gray-200">
-                        <span className="inline-flex px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                      <td key={product.id} className="p-4 border-b" style={{ borderBottomColor: borderColor }}>
+                        <span className="inline-flex px-2 py-1 text-xs rounded-full" style={{ backgroundColor: hoverBg, color: textMuted }}>
                           {getCategoryName(product)}
                         </span>
                       </td>
@@ -324,12 +367,12 @@ export const PageSet = () => {
 
                   {/* Brand */}
                   <tr>
-                    <td className="p-4 border-b border-gray-200 bg-gray-50/50 text-sm font-medium text-gray-600">
+                    <td className="p-4 border-b text-sm font-medium" style={{ borderBottomColor: borderColor, backgroundColor: hoverBg, color: textMuted }}>
                       {texts.brand}
                     </td>
                     {compareList.map((product) => (
-                      <td key={product.id} className="p-4 border-b border-gray-200">
-                        <span className="text-sm text-gray-900">
+                      <td key={product.id} className="p-4 border-b" style={{ borderBottomColor: borderColor }}>
+                        <span className="text-sm" style={{ color: textColor }}>
                           {getBrandName(product)}
                         </span>
                       </td>
@@ -339,12 +382,12 @@ export const PageSet = () => {
                   {/* Dynamic Specifications */}
                   {specifications.map((spec) => (
                     <tr key={spec}>
-                      <td className="p-4 border-b border-gray-200 bg-gray-50/50 text-sm font-medium text-gray-600 capitalize">
+                      <td className="p-4 border-b text-sm font-medium capitalize" style={{ borderBottomColor: borderColor, backgroundColor: hoverBg, color: textMuted }}>
                         {isBn ? spec : spec}
                       </td>
                       {compareList.map((product) => (
-                        <td key={product.id} className="p-4 border-b border-gray-200">
-                          <span className="text-sm text-gray-700">
+                        <td key={product.id} className="p-4 border-b" style={{ borderBottomColor: borderColor }}>
+                          <span className="text-sm" style={{ color: textMuted }}>
                             {product.specifications?.[spec] || "—"}
                           </span>
                         </td>
@@ -354,12 +397,12 @@ export const PageSet = () => {
 
                   {/* Description */}
                   <tr>
-                    <td className="p-4 border-b border-gray-200 bg-gray-50/50 text-sm font-medium text-gray-600">
+                    <td className="p-4 border-b text-sm font-medium" style={{ borderBottomColor: borderColor, backgroundColor: hoverBg, color: textMuted }}>
                       {texts.description}
                     </td>
                     {compareList.map((product) => (
-                      <td key={product.id} className="p-4 border-b border-gray-200">
-                        <p className="text-sm text-gray-600 line-clamp-3">
+                      <td key={product.id} className="p-4 border-b" style={{ borderBottomColor: borderColor }}>
+                        <p className="text-sm line-clamp-3" style={{ color: textMuted }}>
                           {isBn ? (product.descriptionBn || product.description || texts.noDescription) : (product.description || texts.noDescription)}
                         </p>
                       </td>
@@ -368,7 +411,7 @@ export const PageSet = () => {
 
                   {/* Actions */}
                   <tr>
-                    <td className="p-4 bg-gray-50/50 text-sm font-medium text-gray-600">
+                    <td className="p-4 text-sm font-medium" style={{ backgroundColor: hoverBg, color: textMuted }}>
                       {texts.actions}
                     </td>
                     {compareList.map((product) => (
@@ -380,9 +423,16 @@ export const PageSet = () => {
                             className={cn(
                               "w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-colors",
                               product.stock
-                                ? "bg-red-500 hover:bg-red-600 text-white"
+                                ? "text-white"
                                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
                             )}
+                            style={product.stock ? { backgroundColor: primaryColor } : {}}
+                            onMouseEnter={(e) => {
+                              if (product.stock) e.currentTarget.style.backgroundColor = buttonHoverColor;
+                            }}
+                            onMouseLeave={(e) => {
+                              if (product.stock) e.currentTarget.style.backgroundColor = primaryColor;
+                            }}
                           >
                             <ShoppingCart className="w-4 h-4" />
                             {texts.addToCart}
@@ -390,7 +440,10 @@ export const PageSet = () => {
                           
                           <button
                             onClick={() => handleRemoveFromCompare(product.id, getProductName(product))}
-                            className="w-full text-sm text-gray-500 hover:text-red-500 transition-colors"
+                            className="w-full text-sm transition-colors"
+                            style={{ color: textMuted }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = errorColor}
+                            onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
                           >
                             {texts.remove}
                           </button>
@@ -406,21 +459,22 @@ export const PageSet = () => {
 
         {/* Recommendation Section */}
         {compareList.length > 0 && compareList.length < 4 && (
-          <div className="mt-8 p-6 bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl">
+          <div className="mt-8 p-6 rounded-2xl" style={{ background: `linear-gradient(135deg, ${primaryColor}10, ${warningColor}10)` }}>
             <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-5 h-5 text-red-500" />
-              <h3 className="text-lg font-semibold text-gray-900">
+              <Sparkles className="w-5 h-5" style={{ color: primaryColor }} />
+              <h3 className="text-lg font-semibold" style={{ color: textColor }}>
                 {texts.wantToCompareMore}
               </h3>
             </div>
-            <p className="text-gray-600 mb-4">
-              {isBn 
-                ? texts.youCanCompare(compareList.length)
-                : texts.youCanCompareEn(4 - compareList.length)}
+            <p className="mb-4" style={{ color: textMuted }}>
+              {texts.youCanCompare(4 - compareList.length)}
             </p>
             <Link
               href="/shop"
-              className="inline-flex items-center gap-2 text-red-500 font-medium hover:text-red-600"
+              className="inline-flex items-center gap-2 font-medium transition-colors"
+              style={{ color: primaryColor }}
+              onMouseEnter={(e) => e.currentTarget.style.color = buttonHoverColor}
+              onMouseLeave={(e) => e.currentTarget.style.color = primaryColor}
             >
               {texts.browseMore}
             </Link>
@@ -429,14 +483,14 @@ export const PageSet = () => {
 
         {/* Best Value Highlight */}
         {compareList.length >= 2 && (
-          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+          <div className="mt-6 p-4 rounded-xl" style={{ backgroundColor: `${successColor}10`, border: `1px solid ${successColor}20` }}>
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <TrendingDown className="w-5 h-5 text-green-600" />
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${successColor}20` }}>
+                <TrendingDown className="w-5 h-5" style={{ color: successColor }} />
               </div>
               <div>
-                <h4 className="font-semibold text-green-800">{texts.bestValuePick}</h4>
-                <p className="text-sm text-green-700">
+                <h4 className="font-semibold" style={{ color: successColor }}>{texts.bestValuePick}</h4>
+                <p className="text-sm" style={{ color: successColor }}>
                   {texts.bestValueDesc(
                     compareList.reduce((best, current) => 
                       (current.price / (current.rating || 1)) < (best.price / (best.rating || 1)) ? current : best

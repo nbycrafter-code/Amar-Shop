@@ -15,6 +15,8 @@ interface OrderItem {
   selectedSize?: string;
   selectedColor?: string;
   image?: string;
+  slug?: string;
+  selectedColorHex?: string;
 }
 
 interface Order {
@@ -36,6 +38,7 @@ interface Order {
   customerAddress: string;
   customerPhone: string;
   customerEmail: string;
+  createdAt: string;
   shipping_address?: {
     name: string;
     address: string;
@@ -52,11 +55,24 @@ interface Order {
 
 interface OrderDetailPageSetProps {
   order: Order;
+  settings?: any; // settings prop যোগ করা হলো
 }
 
-const OrderDetailPageSet = ({ order }: OrderDetailPageSetProps) => {
+const OrderDetailPageSet = ({ order, settings = {} }: OrderDetailPageSetProps) => {
   const { language } = useLanguage();
   const isBn = language === 'bn';
+
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const backgroundColor = settings?.backgroundColor || "#FFFFFF";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const hoverBg = settings?.hoverBackground || "#F3F4F6";
+  const successColor = settings?.successColor || "#10B981";
+  const warningColor = settings?.warningColor || "#F59E0B";
+  const infoColor = settings?.infoColor || "#3B82F6";
+  const errorColor = settings?.errorColor || "#EF4444";
 
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -119,32 +135,46 @@ const OrderDetailPageSet = ({ order }: OrderDetailPageSetProps) => {
     return statusMap[status?.toLowerCase()] || status;
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusStyle = (status: string) => {
     const statusLower = status?.toLowerCase() || "";
+    let bgColor, color;
+    
     if (statusLower === "processing" || statusLower === "pending") {
-      return "bg-yellow-100 text-yellow-700 border-yellow-200";
+      bgColor = `${warningColor}20`;
+      color = warningColor;
+    } else if (statusLower === "completed" || statusLower === "delivered") {
+      bgColor = `${successColor}20`;
+      color = successColor;
+    } else if (statusLower === "shipped") {
+      bgColor = `${infoColor}20`;
+      color = infoColor;
+    } else if (statusLower === "cancelled") {
+      bgColor = `${errorColor}20`;
+      color = errorColor;
+    } else {
+      bgColor = `${textMuted}20`;
+      color = textMuted;
     }
-    if (statusLower === "completed" || statusLower === "delivered") {
-      return "bg-green-100 text-green-700 border-green-200";
-    }
-    if (statusLower === "shipped") {
-      return "bg-blue-100 text-blue-700 border-blue-200";
-    }
-    if (statusLower === "cancelled") {
-      return "bg-red-100 text-red-700 border-red-200";
-    }
-    return "bg-gray-100 text-gray-700 border-gray-200";
+    
+    return { backgroundColor: bgColor, color: color, borderColor: borderColor };
   };
 
   const getStatusDotColor = (status: string) => {
     const statusLower = status?.toLowerCase() || "";
-    if (statusLower === "processing" || statusLower === "pending")
-      return "bg-yellow-500";
-    if (statusLower === "completed" || statusLower === "delivered")
-      return "bg-green-500";
-    if (statusLower === "shipped") return "bg-blue-500";
-    if (statusLower === "cancelled") return "bg-red-500";
-    return "bg-gray-500";
+    if (statusLower === "processing" || statusLower === "pending") return warningColor;
+    if (statusLower === "completed" || statusLower === "delivered") return successColor;
+    if (statusLower === "shipped") return infoColor;
+    if (statusLower === "cancelled") return errorColor;
+    return textMuted;
+  };
+
+  const getPaymentStatusStyle = (paymentStatus: string) => {
+    const isPaid = paymentStatus === "paid";
+    return {
+      backgroundColor: isPaid ? `${successColor}20` : `${warningColor}20`,
+      color: isPaid ? successColor : warningColor,
+      borderColor: borderColor
+    };
   };
 
   const getOrderProgress = (status: string) => {
@@ -171,7 +201,6 @@ const OrderDetailPageSet = ({ order }: OrderDetailPageSetProps) => {
     );
   };
 
-
   const handleImageClick = (imageUrl: string) => {
     setSelectedImage(imageUrl);
     setShowImageModal(true);
@@ -191,34 +220,38 @@ const OrderDetailPageSet = ({ order }: OrderDetailPageSetProps) => {
   return (
     <div className="flex-1 order-2 lg:order-1 space-y-6">
       {/* Order Status Banner */}
-      <div className="bg-white rounded-lg border border-gray-200 p-5">
-        <p className="text-gray-700 text-sm">
-          {texts.order} <strong className="text-gray-900">{order.orderId || order.order_number}</strong>{" "}
+      <div 
+        className="rounded-lg border p-5"
+        style={{ backgroundColor: backgroundColor, borderColor: borderColor }}
+      >
+        <p className="text-sm" style={{ color: textMuted }}>
+          {texts.order} <strong style={{ color: textColor }}>{order.orderId || order.order_number}</strong>{" "}
           {texts.wasPlacedOn}{" "}
-          <strong className="text-gray-900">{formatDate(order.createdAt)}</strong>{" "}
+          <strong style={{ color: textColor }}>{formatDate(order.createdAt)}</strong>{" "}
           {texts.andIsCurrently}{" "}
-          <strong className="text-gray-900">{orderStatus}</strong>.
+          <strong style={{ color: primaryColor }}>{orderStatus}</strong>.
         </p>
         <div className="flex items-center gap-3 mt-3 flex-wrap">
           <span
-            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(order.orderStatus || order.status)}`}
+            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border"
+            style={getStatusStyle(order.orderStatus || order.status)}
           >
             <span
-              className={`w-1.5 h-1.5 rounded-full mr-1.5 ${getStatusDotColor(order.orderStatus || order.status)}`}
+              className="w-1.5 h-1.5 rounded-full mr-1.5"
+              style={{ backgroundColor: getStatusDotColor(order.orderStatus || order.status) }}
             ></span>
             {orderStatus}
           </span>
           <span
-            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${paymentStatus === "paid"
-              ? "bg-green-100 text-green-700 border-green-200"
-              : "bg-yellow-100 text-yellow-700 border-yellow-200"
-              }`}
+            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border"
+            style={getPaymentStatusStyle(paymentStatus)}
           >
             {texts.payment}: {paymentStatus === "paid" ? texts.paid : texts.pending}
           </span>
           <Link
             href="/my-account/orders"
-            className="text-sm text-red-500 hover:underline"
+            className="text-sm hover:underline"
+            style={{ color: primaryColor }}
           >
             {texts.backToOrders}
           </Link>
@@ -227,8 +260,11 @@ const OrderDetailPageSet = ({ order }: OrderDetailPageSetProps) => {
 
       {/* Order Progress - Only show if not cancelled */}
       {currentProgress >= 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">{texts.orderProgress}</h3>
+        <div 
+          className="rounded-lg border p-6"
+          style={{ backgroundColor: backgroundColor, borderColor: borderColor }}
+        >
+          <h3 className="font-semibold mb-4" style={{ color: textColor }}>{texts.orderProgress}</h3>
           <div className="flex items-center gap-0">
             {progressSteps.map((step, i) => {
               const isCompleted = i <= currentProgress;
@@ -238,10 +274,12 @@ const OrderDetailPageSet = ({ order }: OrderDetailPageSetProps) => {
                 <div key={step} className="flex items-center flex-1">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${isCompleted
-                        ? "bg-red-500 border-red-500 text-white"
-                        : "bg-white border-gray-300 text-gray-400"
-                        }`}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all"
+                      style={{
+                        backgroundColor: isCompleted ? primaryColor : 'transparent',
+                        borderColor: isCompleted ? primaryColor : borderColor,
+                        color: isCompleted ? '#FFFFFF' : textMuted
+                      }}
                     >
                       {isCompleted ? (
                         <svg
@@ -262,14 +300,16 @@ const OrderDetailPageSet = ({ order }: OrderDetailPageSetProps) => {
                       )}
                     </div>
                     <span
-                      className={`text-xs mt-1 text-center whitespace-nowrap ${isCompleted ? "text-red-500 font-medium" : "text-gray-400"}`}
+                      className="text-xs mt-1 text-center whitespace-nowrap"
+                      style={{ color: isCompleted ? primaryColor : textMuted }}
                     >
                       {step}
                     </span>
                   </div>
                   {!isLast && (
                     <div
-                      className={`flex-1 h-0.5 mx-1 mb-4 ${i < currentProgress ? "bg-red-500" : "bg-gray-200"}`}
+                      className="flex-1 h-0.5 mx-1 mb-4"
+                      style={{ backgroundColor: i < currentProgress ? primaryColor : borderColor }}
                     ></div>
                   )}
                 </div>
@@ -280,33 +320,33 @@ const OrderDetailPageSet = ({ order }: OrderDetailPageSetProps) => {
       )}
 
       {/* Order Details Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-bold text-gray-900">{texts.orderDetails}</h2>
+      <div 
+        className="rounded-lg border overflow-hidden"
+        style={{ backgroundColor: backgroundColor, borderColor: borderColor }}
+      >
+        <div className="px-6 py-4 border-b" style={{ borderBottomColor: borderColor }}>
+          <h2 className="text-lg font-bold" style={{ color: textColor }}>{texts.orderDetails}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr className="border-b border-gray-200">
-                <th className="text-left px-6 py-3 font-medium text-gray-600">
-                  {texts.product}
-                </th>
-                <th className="text-right px-6 py-3 font-medium text-gray-600">
-                  {texts.total}
-                </th>
+            <thead style={{ backgroundColor: hoverBg }}>
+              <tr className="border-b" style={{ borderBottomColor: borderColor }}>
+                <th className="text-left px-6 py-3 font-medium" style={{ color: textMuted }}>{texts.product}</th>
+                <th className="text-right px-6 py-3 font-medium" style={{ color: textMuted }}>{texts.total}</th>
               </tr>
             </thead>
             <tbody>
               {order.items?.map((item, idx) => (
-                <tr key={idx} className="border-b border-gray-100">
+                <tr key={idx} className="border-b" style={{ borderBottomColor: borderColor }}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       {/* Product Image - Clickable */}
                       <div
-                        className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-red-400 transition-all relative group"
-                        onClick={() =>
-                          item.image && handleImageClick(item.image)
-                        }
+                        className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 cursor-pointer transition-all relative group"
+                        onClick={() => item.image && handleImageClick(item.image)}
+                        style={{ boxShadow: `0 0 0 1px ${borderColor}` }}
+                        onMouseEnter={(e) => e.currentTarget.style.boxShadow = `0 0 0 2px ${primaryColor}`}
+                        onMouseLeave={(e) => e.currentTarget.style.boxShadow = `0 0 0 1px ${borderColor}`}
                       >
                         {item.image ? (
                           <>
@@ -334,9 +374,9 @@ const OrderDetailPageSet = ({ order }: OrderDetailPageSetProps) => {
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-100">
                             <svg
-                              className="w-6 h-6 text-gray-300"
+                              className="w-6 h-6"
                               fill="none"
-                              stroke="currentColor"
+                              stroke={textMuted}
                               strokeWidth={1.5}
                               viewBox="0 0 24 24"
                             >
@@ -352,11 +392,12 @@ const OrderDetailPageSet = ({ order }: OrderDetailPageSetProps) => {
                       <div>
                         <Link
                           href={`/product/${item.slug}`}
-                          className="text-red-500 hover:underline text-left font-medium"
+                          className="hover:underline text-left font-medium"
+                          style={{ color: primaryColor }}
                         >
                           {getProductName(item)}
                         </Link>
-                        <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                        <div className="flex items-center gap-1 text-xs mt-0.5" style={{ color: textMuted }}>
                           {item.selectedSize && (
                             <span>{texts.size}: {item.selectedSize} | </span>
                           )}
@@ -367,8 +408,7 @@ const OrderDetailPageSet = ({ order }: OrderDetailPageSetProps) => {
                                 <span
                                   className="w-3 h-3 rounded-full border border-gray-300 inline-flex"
                                   style={{
-                                    backgroundColor:
-                                      item.selectedColorHex || "#000",
+                                    backgroundColor: item.selectedColorHex || "#000",
                                   }}
                                 />
                                 <span>{item.selectedColor}</span>
@@ -376,52 +416,44 @@ const OrderDetailPageSet = ({ order }: OrderDetailPageSetProps) => {
                             )}
                           </div>
                         </div>
-                        <span className="text-gray-500 text-xs">
+                        <span className="text-xs" style={{ color: textMuted }}>
                           {texts.qty}: {toBengaliNumber(item.quantity)}
                         </span>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right font-semibold text-red-500">
+                  <td className="px-6 py-4 text-right font-semibold" style={{ color: primaryColor }}>
                     {isBn ? toBengaliNumber(taka(item.price * item.quantity)) : taka(item.price * item.quantity)}
                   </td>
                 </tr>
               ))}
             </tbody>
-            <tfoot className="border-t-2 border-gray-200">
-              <tr className="border-b border-gray-100">
-                <td className="px-6 py-3 font-semibold text-gray-700">
-                  {texts.subtotalLabel}
-                </td>
-                <td className="px-6 py-3 text-right font-bold text-red-500">
+            <tfoot className="border-t-2" style={{ borderTopColor: borderColor }}>
+              <tr className="border-b" style={{ borderBottomColor: borderColor }}>
+                <td className="px-6 py-3 font-semibold" style={{ color: textMuted }}>{texts.subtotalLabel}</td>
+                <td className="px-6 py-3 text-right font-bold" style={{ color: primaryColor }}>
                   {isBn ? toBengaliNumber(taka(subtotal)) : taka(subtotal)}
                 </td>
               </tr>
-              <tr className="border-b border-gray-100">
-                <td className="px-6 py-3 font-semibold text-gray-700">
-                  {texts.shippingLabel}
-                </td>
-                <td className="px-6 py-3 text-right font-bold text-red-500">
+              <tr className="border-b" style={{ borderBottomColor: borderColor }}>
+                <td className="px-6 py-3 font-semibold" style={{ color: textMuted }}>{texts.shippingLabel}</td>
+                <td className="px-6 py-3 text-right font-bold" style={{ color: primaryColor }}>
                   {shipping === 0 ? (
-                    <span className="text-green-600">{texts.free}</span>
+                    <span style={{ color: successColor }}>{texts.free}</span>
                   ) : (
                     `${isBn ? toBengaliNumber(taka(shipping)) : taka(shipping)}`
                   )}
                 </td>
               </tr>
-              <tr className="border-b border-gray-100">
-                <td className="px-6 py-3 font-semibold text-gray-700">
-                  {texts.paymentMethodLabel}
-                </td>
-                <td className="px-6 py-3 text-right font-bold text-gray-800">
+              <tr className="border-b" style={{ borderBottomColor: borderColor }}>
+                <td className="px-6 py-3 font-semibold" style={{ color: textMuted }}>{texts.paymentMethodLabel}</td>
+                <td className="px-6 py-3 text-right font-bold" style={{ color: textColor }}>
                   {getPaymentMethodText()}
                 </td>
               </tr>
               <tr>
-                <td className="px-6 py-4 font-bold text-gray-900 text-base">
-                  {texts.totalLabel}
-                </td>
-                <td className="px-6 py-4 text-right font-bold text-red-500 text-lg">
+                <td className="px-6 py-4 font-bold text-base" style={{ color: textColor }}>{texts.totalLabel}</td>
+                <td className="px-6 py-4 text-right font-bold text-lg" style={{ color: primaryColor }}>
                   {isBn ? toBengaliNumber(taka(total)) : taka(total)}
                 </td>
               </tr>
@@ -433,27 +465,23 @@ const OrderDetailPageSet = ({ order }: OrderDetailPageSetProps) => {
       {/* Addresses */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Billing Address */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="font-bold text-gray-900 mb-4 text-base">
-            {texts.billingAddress}
-          </h3>
-          <div className="border border-gray-200 rounded p-4 space-y-1 text-sm text-gray-600">
-            <p className="text-red-500 font-medium">{order.customerName}</p>
-            <p>{order.customerAddress}</p>
-            <p>{order.customerPhone}</p>
-            <p className="text-red-500">{order.customerEmail}</p>
+        <div className="rounded-lg border p-6" style={{ backgroundColor: backgroundColor, borderColor: borderColor }}>
+          <h3 className="font-bold mb-4 text-base" style={{ color: textColor }}>{texts.billingAddress}</h3>
+          <div className="border rounded p-4 space-y-1 text-sm" style={{ borderColor: borderColor }}>
+            <p className="font-medium" style={{ color: primaryColor }}>{order.customerName}</p>
+            <p style={{ color: textMuted }}>{order.customerAddress}</p>
+            <p style={{ color: textMuted }}>{order.customerPhone}</p>
+            <p style={{ color: primaryColor }}>{order.customerEmail}</p>
           </div>
         </div>
 
         {/* Shipping Address */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="font-bold text-gray-900 mb-4 text-base">
-            {texts.shippingAddress}
-          </h3>
-          <div className="border border-gray-200 rounded p-4 space-y-1 text-sm text-gray-600">
-            <p className="font-medium text-gray-800">{order.customerName}</p>
-            <p>{order.customerAddress}</p>
-            <p>{order.customerPhone}</p>
+        <div className="rounded-lg border p-6" style={{ backgroundColor: backgroundColor, borderColor: borderColor }}>
+          <h3 className="font-bold mb-4 text-base" style={{ color: textColor }}>{texts.shippingAddress}</h3>
+          <div className="border rounded p-4 space-y-1 text-sm" style={{ borderColor: borderColor }}>
+            <p className="font-medium" style={{ color: textColor }}>{order.customerName}</p>
+            <p style={{ color: textMuted }}>{order.customerAddress}</p>
+            <p style={{ color: textMuted }}>{order.customerPhone}</p>
           </div>
         </div>
       </div>

@@ -1,8 +1,8 @@
 // app/verify-otp/page.tsx
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -11,13 +11,14 @@ export function VerifyOTPContent() {
   const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [timer, setTimer] = useState(120); // 2 minutes (120 seconds)
+  const [timer, setTimer] = useState(120);
   const [canResend, setCanResend] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [currentToken, setCurrentToken] = useState<string | null>(null);
-  
+
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const phone = searchParams.get("phone");
@@ -29,9 +30,9 @@ export function VerifyOTPContent() {
       setTimeout(() => router.push("/forgot-password"), 1500);
       return;
     }
-    
+
     setCurrentToken(token);
-    
+
     if (phone) {
       setPhoneNumber(phone);
     }
@@ -43,7 +44,7 @@ export function VerifyOTPContent() {
       setCanResend(true);
       return;
     }
-    
+
     const interval = setInterval(() => {
       setTimer((prev) => {
         if (prev <= 1) {
@@ -54,74 +55,64 @@ export function VerifyOTPContent() {
         return prev - 1;
       });
     }, 1000);
-    
+
     return () => clearInterval(interval);
   }, [timer]);
 
-  // Handle OTP input change
   const handleInputChange = (index: number, value: string) => {
-    // Only allow digits
     const digit = value.replace(/\D/g, "");
     if (digit.length > 1) return;
-    
+
     const newOtpValues = [...otpValues];
     newOtpValues[index] = digit;
     setOtpValues(newOtpValues);
     setError("");
-    
-    // Clear error border
+
     if (inputRefs.current[index]) {
       inputRefs.current[index]!.style.borderColor = "";
     }
-    
-    // Auto-focus next input
+
     if (digit && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
-  // Handle keydown for backspace
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !otpValues[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
 
-  // Handle paste event
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text").replace(/\D/g, "");
     const digits = pastedData.slice(0, 6).split("");
-    
+
     const newOtpValues = [...otpValues];
     digits.forEach((digit, idx) => {
       if (idx < 6) newOtpValues[idx] = digit;
     });
     setOtpValues(newOtpValues);
-    
-    // Focus on the next empty input or last input
+
     const lastFilledIndex = Math.min(digits.length, 5);
     if (lastFilledIndex < 6) {
       inputRefs.current[lastFilledIndex]?.focus();
     }
   };
 
-  // Get full OTP string
   const getFullOtp = () => otpValues.join("");
 
-  // Shake animation for error
   const shakeError = () => {
     const row = document.getElementById("otp-row");
     if (row) {
       row.style.animation = "none";
-      row.offsetHeight; // Trigger reflow
+      row.offsetHeight;
       row.style.animation = "shake 0.4s ease-in-out";
-      
-      // Reset border colors
+
       inputRefs.current.forEach((input) => {
         if (input) input.style.borderColor = "#ef4444";
       });
-      
+
       setTimeout(() => {
         inputRefs.current.forEach((input) => {
           if (input) input.style.borderColor = "";
@@ -131,28 +122,27 @@ export function VerifyOTPContent() {
     }
   };
 
-  // Verify OTP handler
   const handleVerifyOTP = async (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     const otpCode = getFullOtp();
-    
+
     if (otpCode.length !== 6) {
       toast.error("Please enter a valid 6-digit OTP");
       shakeError();
       return;
     }
-    
+
     if (!currentToken) {
       toast.error("Invalid verification session");
       router.push("/forgot-password");
       return;
     }
-    
+
     try {
       setLoading(true);
       setError("");
-      
+
       const response = await fetch("/api/verify-otp", {
         method: "POST",
         headers: {
@@ -164,42 +154,80 @@ export function VerifyOTPContent() {
           phone: phoneNumber,
         }),
       });
-      
+
       const result = await response.json();
-      
+      console.log("==================================================");
+      console.log("==================================================");
+      console.log("==================================================");
+      console.log(result);
+      console.log(result.user);
+
       if (!response.ok) {
         setError(result.error);
         toast.error(result.error);
-        
+
         if (result.error?.includes("expired") || result.error?.includes("Expired")) {
           setCanResend(true);
         }
-        
+
         shakeError();
       } else {
         toast.success(result.message || "OTP verified successfully!");
-        
-        // Store email for sign in
+
         const userEmail = result.email || result.user?.email;
-        
-        // Sign in the user after successful verification
+        const isBengali = pathname.split('/')[1] === 'bn';
+        const userRole = result.role || result.user?.role;
+
         if (userEmail) {
+          console.log("Attempting sign in with email:", userEmail);
+
+          // ✅ সঠিক callbackUrl তৈরি করুন
+          let callbackUrl = "/dashboard";
+          
+          if (userRole === "admin") {
+            callbackUrl = isBengali ? "/bn/dashboard" : "/dashboard";
+          } else if (userRole === "user") {
+            callbackUrl = isBengali ? "/bn/my-account/dashboard" : "/my-account/dashboard";
+          } else {
+            callbackUrl = isBengali ? "/bn/dashboard" : "/dashboard";
+          }
+
+          // ✅ First try to sign in
           const signInResult = await signIn("credentials", {
             email: userEmail,
             otpVerified: true,
             redirect: false,
-            callbackUrl: "/dashboard",
+            callbackUrl: callbackUrl,
           });
-          
+
+          console.log("Sign in result:", signInResult);
+
           if (signInResult?.error) {
             console.error("Sign in error:", signInResult.error);
             toast.error("Auto-login failed. Please login manually.");
-            router.push("/login");
+            
+            const loginUrl = isBengali ? "/bn/login" : "/login";
+            setTimeout(() => router.push(loginUrl), 1500);
           } else {
-            router.push("/dashboard");
+            // ✅ Sign in successful, redirect based on role
+            if (userRole === "admin") {
+              setTimeout(() => {
+                toast.success(isBengali ? "অ্যাডমিন লগইন সফল!" : "Admin Login Successful!");
+              }, 600);
+              router.push(callbackUrl);
+            } else if (userRole === "user") {
+              setTimeout(() => {
+                toast.success(isBengali ? "লগইন সফল!" : "Login Successful!");
+              }, 600);
+              router.push(callbackUrl);
+            } else {
+              setTimeout(() => {
+                toast.success(isBengali ? "লগইন সফল!" : "Login Successful!");
+              }, 600);
+              router.push(callbackUrl);
+            }
           }
         } else {
-          // If no email, redirect to reset password
           router.push("/reset-password");
         }
       }
@@ -214,22 +242,21 @@ export function VerifyOTPContent() {
     }
   };
 
-  // Resend OTP handler
   const handleResendOTP = async () => {
     if (!canResend) {
       toast.error(`Please wait ${formatTime(timer)} before requesting another code`);
       return;
     }
-    
+
     if (!currentToken && !token) {
       toast.error("Invalid session. Please request again.");
       router.push("/forgot-password");
       return;
     }
-    
+
     try {
       setLoading(true);
-      
+
       const response = await fetch("/api/resend-otp", {
         method: "POST",
         headers: {
@@ -240,37 +267,32 @@ export function VerifyOTPContent() {
           phone: phoneNumber,
         }),
       });
-      
+
       const result = await response.json();
       
       if (!response.ok) {
         toast.error(result.error || "Failed to resend OTP");
       } else {
         toast.success(result.message || "New OTP sent successfully!");
-        
-        // Update token if provided
+
         if (result.newToken) {
           setCurrentToken(result.newToken);
-          // Update URL without reload
           window.history.replaceState(
             {},
             "",
             `/verify-otp?token=${encodeURIComponent(result.newToken)}${phone ? `&phone=${encodeURIComponent(phone)}` : ""}`,
           );
         }
-        
-        // Reset timer to 2 minutes (120 seconds)
+
         setTimer(120);
         setCanResend(false);
         setOtpValues(["", "", "", "", "", ""]);
         setError("");
-        
-        // Clear error borders
+
         inputRefs.current.forEach((input) => {
           if (input) input.style.borderColor = "";
         });
-        
-        // Focus first input
+
         setTimeout(() => inputRefs.current[0]?.focus(), 100);
       }
     } catch (err) {
@@ -289,7 +311,6 @@ export function VerifyOTPContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 font-dm overflow-hidden relative">
-      {/* Background Blobs */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute w-[500px] h-[500px] bg-orange-200/30 -top-[150px] -left-[100px] rounded-full blur-[80px] animate-float-1"></div>
         <div className="absolute w-[400px] h-[400px] bg-blue-200/30 -bottom-[100px] -right-[80px] rounded-full blur-[80px] animate-float-2"></div>
@@ -297,13 +318,11 @@ export function VerifyOTPContent() {
       </div>
 
       <div className="relative z-10 w-[420px] px-11 pt-12 pb-10 bg-white/55 backdrop-blur-2xl border border-white/75 rounded-3xl shadow-[0_8px_48px_rgba(180,100,60,0.10),0_1.5px_8px_rgba(0,0,0,0.06)] animate-slide-up">
-        {/* Logo */}
         <Link href={'/'} className="flex items-baseline justify-center mb-8">
           <span className="font-playfair text-[32px] font-bold text-brand tracking-tight">AMAR</span>
           <span className="font-dm text-[22px] font-normal text-[#2c2c2c] tracking-wide">shop</span>
         </Link>
 
-        {/* Icon */}
         <div className="flex justify-center mb-6">
           <div className="w-16 h-16 rounded-2xl bg-brand/10 flex items-center justify-center">
             <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -323,7 +342,6 @@ export function VerifyOTPContent() {
         </p>
 
         <form onSubmit={handleVerifyOTP}>
-          {/* OTP Inputs */}
           <div id="otp-row" className="flex justify-center gap-3 mb-4">
             {otpValues.map((value, index) => (
               <input
@@ -345,14 +363,12 @@ export function VerifyOTPContent() {
             ))}
           </div>
 
-          {/* Error Message */}
           {error && (
             <p className="text-center text-[12.5px] text-red-500 mb-2">
               {error}
             </p>
           )}
 
-          {/* Countdown */}
           <div className="text-center mb-2">
             <span className="text-[13px] text-[#aaa]">কোড মেয়াদ শেষ হবে: </span>
             <span className={`text-[13px] font-semibold ${timer === 0 ? "text-red-500" : "text-brand"}`}>
@@ -376,7 +392,6 @@ export function VerifyOTPContent() {
           </button>
         </form>
 
-        {/* Resend */}
         <div className="text-center mt-5">
           <span className="text-[13px] text-[#aaa]">কোড পাননি? </span>
           <button
@@ -393,8 +408,7 @@ export function VerifyOTPContent() {
             ← পিছনে যান
           </Link>
         </p>
-        
-        {/* Help Text */}
+
         <div className="mt-6 text-center text-[11px] text-[#aaa] space-y-1">
           <p>✓ আপনার ফোন চেক করুন (SMS ইনবক্স দেখুন)</p>
           <p>✓ কোডটি ২ মিনিটের মধ্যে মেয়াদ শেষ হবে</p>
@@ -415,73 +429,39 @@ export function VerifyOTPContent() {
         }
         
         @keyframes float1 {
-          0%, 100% {
-            transform: translate(0, 0);
-          }
-          50% {
-            transform: translate(30px, 20px);
-          }
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(30px, 20px); }
         }
         
         @keyframes float2 {
-          0%, 100% {
-            transform: translate(0, 0);
-          }
-          50% {
-            transform: translate(-20px, 30px);
-          }
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(-20px, 30px); }
         }
         
         @keyframes float3 {
-          0%, 100% {
-            transform: translate(-50%, -50%);
-          }
-          50% {
-            transform: translate(-42%, -58%);
-          }
+          0%, 100% { transform: translate(-50%, -50%); }
+          50% { transform: translate(-42%, -58%); }
         }
         
         @keyframes shake {
-          0%, 100% {
-            transform: translateX(0);
-          }
-          20%, 60% {
-            transform: translateX(-6px);
-          }
-          40%, 80% {
-            transform: translateX(6px);
-          }
+          0%, 100% { transform: translateX(0); }
+          20%, 60% { transform: translateX(-6px); }
+          40%, 80% { transform: translateX(6px); }
         }
         
         @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
+          to { transform: rotate(360deg); }
         }
         
         .animate-slide-up {
           animation: slideUp 0.65s cubic-bezier(0.22, 0.9, 0.36, 1) both;
         }
         
-        .animate-float-1 {
-          animation: float1 8s ease-in-out infinite;
-        }
-        
-        .animate-float-2 {
-          animation: float2 10s ease-in-out infinite;
-        }
-        
-        .animate-float-3 {
-          animation: float3 12s ease-in-out infinite;
-        }
-        
-        .animate-shake {
-          animation: shake 0.4s ease-in-out;
-        }
-        
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
+        .animate-float-1 { animation: float1 8s ease-in-out infinite; }
+        .animate-float-2 { animation: float2 10s ease-in-out infinite; }
+        .animate-float-3 { animation: float3 12s ease-in-out infinite; }
+        .animate-shake { animation: shake 0.4s ease-in-out; }
+        .animate-spin { animation: spin 1s linear infinite; }
         
         .otp-input {
           width: 3rem;

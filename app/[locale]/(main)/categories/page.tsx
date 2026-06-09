@@ -1,12 +1,13 @@
 import { getCategories } from "@/queries/categories";
 import { PageSet } from "./PageSet";
+import { getSetting } from "@/queries/settings";
 
 const CategoriesPage = async({}) => {
-
-    const categories = await getCategories();
+  const settings = await getSetting();
+  const categories = await getCategories();
 
   return (
-    <PageSet categories={categories} />
+    <PageSet settings={settings} categories={categories} />
   );
 };
 

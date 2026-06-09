@@ -32,10 +32,23 @@ interface Product {
 
 interface DealOfDayProps {
   products: Product[];
+  settings?: any; // settings prop যোগ করা হলো
 }
 
-export const DealOfDay = ({ products }: DealOfDayProps) => {
+export const DealOfDay = ({ products, settings }: DealOfDayProps) => {
   const { language } = useLanguage();
+
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#d94535";
+  const headingColor = settings?.headingColor || "#1F2937";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const backgroundColor = settings?.backgroundColor || "#F9FAFB";
+  const cardBg = settings?.cardBackground || "#FFFFFF";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const discountBg = settings?.errorColor || "#FEE2E2";
+  const discountText = settings?.errorColor || "#DC2626";
 
   const getProductName = (product: Product): string => {
     if (language === 'bn') {
@@ -56,23 +69,29 @@ export const DealOfDay = ({ products }: DealOfDayProps) => {
   }
 
   return (
-    <section className="py-12 bg-gray-50">
+    <section className="py-12" style={{ backgroundColor: backgroundColor }}>
       <div className="container mx-auto w-full px-4">
         <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-800">
+            <h2 className="text-xl md:text-2xl font-bold" style={{ color: headingColor }}>
               {language === 'bn' ? 'সীমিত সংস্করণ' : 'Limited Edition'}
             </h2>
           </div>
           <div className="flex gap-2">
             <button 
-              className="swiper-btn-prev3 w-8 h-8 rounded-full bg-[#ef553f] text-white flex items-center justify-center hover:bg-[#d94535] transition-colors duration-300 shadow-md"
+              className="swiper-btn-prev3 w-8 h-8 rounded-full text-white flex items-center justify-center transition-colors duration-300 shadow-md"
+              style={{ backgroundColor: primaryColor }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
               aria-label="Previous"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button 
-              className="swiper-btn-next3 w-8 h-8 rounded-full bg-[#ef553f] text-white flex items-center justify-center hover:bg-[#d94535] transition-colors duration-300 shadow-md"
+              className="swiper-btn-next3 w-8 h-8 rounded-full text-white flex items-center justify-center transition-colors duration-300 shadow-md"
+              style={{ backgroundColor: primaryColor }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
               aria-label="Next"
             >
               <ChevronRight className="w-4 h-4" />
@@ -105,7 +124,13 @@ export const DealOfDay = ({ products }: DealOfDayProps) => {
         >
           {products.map((product) => (
             <SwiperSlide key={product._id}>
-              <div className="bg-white rounded-lg p-4 flex gap-4 items-center hover:shadow-lg transition-all duration-300 h-full">
+              <div 
+                className="rounded-lg p-4 flex gap-4 items-center hover:shadow-lg transition-all duration-300 h-full"
+                style={{ 
+                  backgroundColor: cardBg,
+                  border: `1px solid ${borderColor}`
+                }}
+              >
                 <Link href={`/product/${product.slug}`} className="flex-shrink-0">
                   <img
                     src={product.image}
@@ -117,13 +142,16 @@ export const DealOfDay = ({ products }: DealOfDayProps) => {
                 <div className="flex-1 min-w-0">
                   <Link
                     href={`/product/${product.slug}`}
-                    className="font-medium text-sm text-gray-800 line-clamp-2 hover:text-[#ef553f] transition-all duration-300 block"
+                    className="font-medium text-sm line-clamp-2 transition-all duration-300 block"
+                    style={{ color: textColor }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                    onMouseLeave={(e) => e.currentTarget.style.color = textColor}
                   >
                     {getProductName(product)}
                   </Link>
                   
                   {product.category && (
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs mt-1" style={{ color: textMuted }}>
                       {getCategoryName(product)}
                     </p>
                   )}
@@ -136,23 +164,28 @@ export const DealOfDay = ({ products }: DealOfDayProps) => {
                       />
                     ))}
                     {product.reviews && (
-                      <span className="text-xs text-gray-400 ml-1">
+                      <span className="text-xs ml-1" style={{ color: textMuted }}>
                         ({product.reviews})
                       </span>
                     )}
                   </div>
                   
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-[#ef553f] font-bold text-sm md:text-base">
+                    <p className="font-bold text-sm md:text-base" style={{ color: primaryColor }}>
                       ${product.price}
                     </p>
                     {product.originalPrice && (
-                      <p className="text-xs text-gray-400 line-through">
+                      <p className="text-xs line-through" style={{ color: textMuted }}>
                         ${product.originalPrice}
                       </p>
                     )}
                     {product.discount && (
-                      <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">
+                      <span 
+                        className="text-xs px-1.5 py-0.5 rounded text-white"
+                        style={{ 
+                          backgroundColor: discountBg,
+                        }}
+                      >
                         -{product.discount}%
                       </span>
                     )}

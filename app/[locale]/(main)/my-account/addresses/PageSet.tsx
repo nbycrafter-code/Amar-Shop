@@ -19,6 +19,10 @@ interface Address {
   isDefault?: boolean;
 }
 
+interface PageSetProps {
+  settings?: any; // settings prop যোগ করা হলো
+}
+
 // AddressForm component - moved outside to prevent re-renders
 const AddressForm = memo(({ 
   address, 
@@ -28,7 +32,8 @@ const AddressForm = memo(({
   isSaving,
   showEmail = false,
   formError = "",
-  texts
+  texts,
+  settings = {} // settings prop যোগ করা হলো
 }: { 
   address: Address;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
@@ -38,9 +43,15 @@ const AddressForm = memo(({
   showEmail?: boolean;
   formError?: string;
   texts: any;
+  settings?: any;
 }) => {
   const { language } = useLanguage();
   const isBn = language === "bn";
+  
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const borderColor = settings?.borderColor || "#D1D5DB";
+  const focusRingColor = primaryColor;
 
   const countryOptions = [
     { value: "Bangladesh", labelEn: "Bangladesh", labelBn: "বাংলাদেশ" },
@@ -54,55 +65,67 @@ const AddressForm = memo(({
   return (
     <div className="space-y-4">
       {formError && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+        <div 
+          className="p-3 rounded-lg text-sm"
+          style={{ backgroundColor: `${settings?.errorColor || '#EF4444'}10`, border: `1px solid ${settings?.errorColor || '#EF4444'}20`, color: settings?.errorColor || '#EF4444' }}
+        >
           {formError}
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {texts.fullName} <span className="text-red-500">*</span>
+        <label className="block text-sm font-medium mb-1" style={{ color: settings?.textColor || '#374151' }}>
+          {texts.fullName} <span style={{ color: settings?.errorColor || '#EF4444' }}>*</span>
         </label>
         <input
           type="text"
           name="name"
           value={address.name || ""}
           onChange={onChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+          className="w-full px-3 py-2 border rounded-lg outline-none transition-all"
+          style={{ borderColor: borderColor }}
+          onFocus={(e) => e.currentTarget.style.borderColor = focusRingColor}
+          onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
           placeholder={isBn ? "আপনার পূর্ণ নাম লিখুন" : "Enter your full name"}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {texts.addressLine} <span className="text-red-500">*</span>
+        <label className="block text-sm font-medium mb-1" style={{ color: settings?.textColor || '#374151' }}>
+          {texts.addressLine} <span style={{ color: settings?.errorColor || '#EF4444' }}>*</span>
         </label>
         <textarea
           name="address"
           value={address.address || ""}
           onChange={onChange}
           rows={2}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+          className="w-full px-3 py-2 border rounded-lg outline-none transition-all"
+          style={{ borderColor: borderColor }}
+          onFocus={(e) => e.currentTarget.style.borderColor = focusRingColor}
+          onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
           placeholder={isBn ? "বাড়ির নম্বর, রাস্তা, এলাকা" : "House number, street, area"}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {texts.city} <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium mb-1" style={{ color: settings?.textColor || '#374151' }}>
+            {texts.city} <span style={{ color: settings?.errorColor || '#EF4444' }}>*</span>
           </label>
           <input
             type="text"
             name="city"
             value={address.city || ""}
             onChange={onChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+            className="w-full px-3 py-2 border rounded-lg outline-none transition-all"
+            style={{ borderColor: borderColor }}
+            onFocus={(e) => e.currentTarget.style.borderColor = focusRingColor}
+            onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
             placeholder={isBn ? "শহর" : "City"}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium mb-1" style={{ color: settings?.textColor || '#374151' }}>
             {texts.state}
           </label>
           <input
@@ -110,7 +133,10 @@ const AddressForm = memo(({
             name="state"
             value={address.state || ""}
             onChange={onChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+            className="w-full px-3 py-2 border rounded-lg outline-none transition-all"
+            style={{ borderColor: borderColor }}
+            onFocus={(e) => e.currentTarget.style.borderColor = focusRingColor}
+            onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
             placeholder={isBn ? "রাজ্য/জেলা" : "State/District"}
           />
         </div>
@@ -118,7 +144,7 @@ const AddressForm = memo(({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium mb-1" style={{ color: settings?.textColor || '#374151' }}>
             {texts.zipCode}
           </label>
           <input
@@ -126,19 +152,25 @@ const AddressForm = memo(({
             name="zipCode"
             value={address.zipCode || ""}
             onChange={onChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+            className="w-full px-3 py-2 border rounded-lg outline-none transition-all"
+            style={{ borderColor: borderColor }}
+            onFocus={(e) => e.currentTarget.style.borderColor = focusRingColor}
+            onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
             placeholder={isBn ? "পোস্ট কোড" : "Zip Code"}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium mb-1" style={{ color: settings?.textColor || '#374151' }}>
             {texts.country}
           </label>
           <select
             name="country"
             value={address.country || "Bangladesh"}
             onChange={onChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+            className="w-full px-3 py-2 border rounded-lg outline-none transition-all"
+            style={{ borderColor: borderColor }}
+            onFocus={(e) => e.currentTarget.style.borderColor = focusRingColor}
+            onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
           >
             {countryOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -150,22 +182,25 @@ const AddressForm = memo(({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {texts.phone} <span className="text-red-500">*</span>
+        <label className="block text-sm font-medium mb-1" style={{ color: settings?.textColor || '#374151' }}>
+          {texts.phone} <span style={{ color: settings?.errorColor || '#EF4444' }}>*</span>
         </label>
         <input
           type="tel"
           name="phone"
           value={address.phone || ""}
           onChange={onChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+          className="w-full px-3 py-2 border rounded-lg outline-none transition-all"
+          style={{ borderColor: borderColor }}
+          onFocus={(e) => e.currentTarget.style.borderColor = focusRingColor}
+          onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
           placeholder={isBn ? "০১XXXXXXXXX" : "01XXXXXXXXX"}
         />
       </div>
 
       {showEmail && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium mb-1" style={{ color: settings?.textColor || '#374151' }}>
             {texts.email}
           </label>
           <input
@@ -173,7 +208,10 @@ const AddressForm = memo(({
             name="email"
             value={address.email || ""}
             onChange={onChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+            className="w-full px-3 py-2 border rounded-lg outline-none transition-all"
+            style={{ borderColor: borderColor }}
+            onFocus={(e) => e.currentTarget.style.borderColor = focusRingColor}
+            onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
             placeholder="example@email.com"
           />
         </div>
@@ -183,13 +221,19 @@ const AddressForm = memo(({
         <button
           onClick={onSave}
           disabled={isSaving}
-          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all disabled:bg-gray-400 cursor-pointer"
+          className="px-4 py-2 text-white rounded-lg transition-all disabled:opacity-50 cursor-pointer"
+          style={{ backgroundColor: primaryColor }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = settings?.buttonPrimaryHover || '#d4382c'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
         >
           {isSaving ? (isBn ? "সেভ হচ্ছে..." : "Saving...") : texts.save}
         </button>
         <button
           onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all cursor-pointer"
+          className="px-4 py-2 border rounded-lg transition-all cursor-pointer"
+          style={{ borderColor: borderColor, color: settings?.textColor || '#374151', backgroundColor: '#FFFFFF' }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = settings?.hoverBackground || '#F9FAFB'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
         >
           {texts.cancel}
         </button>
@@ -206,15 +250,23 @@ const AddressDisplay = memo(({
   onEdit,
   isEmptyMessage,
   texts,
-  isBn
+  isBn,
+  settings = {} // settings prop যোগ করা হলো
 }: { 
   address: Address | null;
   onEdit: () => void;
   isEmptyMessage: string;
   texts: any;
   isBn: boolean;
+  settings?: any;
 }) => {
   const hasAddress = address?.name && address?.address && address?.city;
+  
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
 
   const countryOptions = [
     { value: "Bangladesh", labelEn: "Bangladesh", labelBn: "বাংলাদেশ" },
@@ -235,27 +287,31 @@ const AddressDisplay = memo(({
 
   if (!hasAddress) {
     return (
-      <div className="border border-dashed border-gray-200 p-4 rounded text-sm text-gray-400 flex items-center justify-center h-32">
+      <div 
+        className="border border-dashed p-4 rounded text-sm flex items-center justify-center h-32"
+        style={{ borderColor: borderColor, color: textMuted }}
+      >
         {isEmptyMessage}
       </div>
     );
   }
 
   return (
-    <div className="border border-gray-200 p-4 rounded text-sm text-gray-600 space-y-1">
-      <p className="font-medium text-gray-800">{address.name}</p>
-      <p>{address.address}</p>
-      <p>
+    <div className="border p-4 rounded text-sm space-y-1" style={{ borderColor: borderColor }}>
+      <p className="font-medium" style={{ color: textColor }}>{address.name}</p>
+      <p style={{ color: textMuted }}>{address.address}</p>
+      <p style={{ color: textMuted }}>
         {address.city}
         {address.state && `, ${address.state}`}
         {address.zipCode && ` - ${address.zipCode}`}
       </p>
-      <p>{getCountryDisplay(address.country)}</p>
-      <p>{address.phone}</p>
-      {address.email && <p className="text-red-500">{address.email}</p>}
+      <p style={{ color: textMuted }}>{getCountryDisplay(address.country)}</p>
+      <p style={{ color: textMuted }}>{address.phone}</p>
+      {address.email && <p style={{ color: primaryColor }}>{address.email}</p>}
       <button
         onClick={onEdit}
-        className="text-xs text-red-500 hover:underline mt-2"
+        className="text-xs hover:underline mt-2"
+        style={{ color: primaryColor }}
       >
         {texts.edit}
       </button>
@@ -265,11 +321,19 @@ const AddressDisplay = memo(({
 
 AddressDisplay.displayName = "AddressDisplay";
 
-export const PageSet = () => {
+export const PageSet = ({ settings = {} }: PageSetProps) => {
   const { language } = useLanguage();
   const isBn = language === "bn";
   const { data: session, update } = useSession();
   const router = useRouter();
+
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const successColor = settings?.successColor || "#10B981";
+  const errorColor = settings?.errorColor || "#EF4444";
 
   const [originalBilling, setOriginalBilling] = useState<Address | null>(null);
   const [originalShipping, setOriginalShipping] = useState<Address | null>(null);
@@ -491,8 +555,11 @@ export const PageSet = () => {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto" />
-          <p className="mt-4 text-gray-600">{texts.loading}</p>
+          <div 
+            className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto"
+            style={{ borderBottomColor: primaryColor }}
+          />
+          <p className="mt-4" style={{ color: textMuted }}>{texts.loading}</p>
         </div>
       </div>
     );
@@ -505,7 +572,10 @@ export const PageSet = () => {
     <div className="flex-1">
       {/* Success Message */}
       {saved && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+        <div 
+          className="mb-4 p-4 rounded-lg text-sm flex items-center gap-2"
+          style={{ backgroundColor: `${successColor}10`, border: `1px solid ${successColor}20`, color: successColor }}
+        >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
@@ -513,17 +583,18 @@ export const PageSet = () => {
         </div>
       )}
 
-      <p className="text-sm text-gray-500 mb-6">{texts.description}</p>
+      <p className="text-sm mb-6" style={{ color: textMuted }}>{texts.description}</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Billing Address */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-700">{texts.billingAddress}</h3>
+            <h3 className="font-semibold" style={{ color: textColor }}>{texts.billingAddress}</h3>
             {editingType !== "billing" && (
               <button
                 onClick={() => startEditing("billing")}
-                className="text-xs text-red-500 hover:underline cursor-pointer"
+                className="text-xs hover:underline cursor-pointer"
+                style={{ color: primaryColor }}
               >
                 {texts.edit}
               </button>
@@ -540,6 +611,7 @@ export const PageSet = () => {
               showEmail={true}
               formError={error}
               texts={texts}
+              settings={settings}
             />
           ) : (
             <AddressDisplay
@@ -548,6 +620,7 @@ export const PageSet = () => {
               isEmptyMessage={texts.noBillingAddress}
               texts={texts}
               isBn={isBn}
+              settings={settings}
             />
           )}
         </div>
@@ -555,11 +628,12 @@ export const PageSet = () => {
         {/* Shipping Address */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-700">{texts.shippingAddress}</h3>
+            <h3 className="font-semibold" style={{ color: textColor }}>{texts.shippingAddress}</h3>
             {editingType !== "shipping" && (
               <button
                 onClick={() => startEditing("shipping")}
-                className="text-xs text-red-500 hover:underline cursor-pointer"
+                className="text-xs hover:underline cursor-pointer"
+                style={{ color: primaryColor }}
               >
                 {texts.edit}
               </button>
@@ -576,6 +650,7 @@ export const PageSet = () => {
               showEmail={false}
               formError={error}
               texts={texts}
+              settings={settings}
             />
           ) : (
             <AddressDisplay
@@ -584,6 +659,7 @@ export const PageSet = () => {
               isEmptyMessage={texts.noShippingAddress}
               texts={texts}
               isBn={isBn}
+              settings={settings}
             />
           )}
         </div>

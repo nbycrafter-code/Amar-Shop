@@ -5,14 +5,8 @@ import {
   Plus,
   CheckCircle2,
   ImageIcon,
-  Upload,
   Video,
   X,
-  Bold,
-  Italic,
-  List,
-  Heading,
-  Link2,
   ChevronDown,
   Search,
   Trash2,
@@ -22,6 +16,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import TipTapEditor from "@/components/TipTapEditor";
 
 // SubCategory Interface
 interface SubCategory {
@@ -59,8 +54,10 @@ interface ApiResponse {
     brand: string;
     sizes: string[];
     colors: string[];
-    description: string;
-    descriptionBn: string;
+    shortDescription: string;
+    shortDescriptionBn: string;
+    longDescription: string;
+    longDescriptionBn: string;
     image: string;
     multiImages: string[];
     video: string;
@@ -75,7 +72,7 @@ interface ApiResponse {
   error?: string;
 }
 
-// Options for select fields
+// Options
 const SECTION_OPTIONS = [
   { value: "new-arrival", labelEn: "New Arrival", labelBn: "নতুন আগমন" },
   { value: "best-seller", labelEn: "Best Seller", labelBn: "বেস্ট সেলার" },
@@ -111,6 +108,7 @@ const DISCOUNT_TYPE_OPTIONS = [
   { value: "percentage", labelEn: "Percentage (%)", labelBn: "পার্সেন্টেজ (%)" },
 ];
 
+// ─── Main Component ──────────────────────────────────────────────────────────
 const AddForm: React.FC<ProductFormProps> = ({
   categories,
   brands,
@@ -118,7 +116,7 @@ const AddForm: React.FC<ProductFormProps> = ({
   colors,
   products,
 }) => {
-  const { language } = useLanguage(); // ✅ যোগ করুন
+  const { language } = useLanguage();
   const router = useRouter();
 
   const [name, setName] = useState<string>("");
@@ -133,8 +131,15 @@ const AddForm: React.FC<ProductFormProps> = ({
   const [brandId, setBrandId] = useState<string>("");
   const [selectedSizeIds, setSelectedSizeIds] = useState<string[]>([]);
   const [selectedColorIds, setSelectedColorIds] = useState<string[]>([]);
-  const [description, setDescription] = useState<string>("");
-  const [descriptionBn, setDescriptionBn] = useState<string>("");
+
+  // ✅ Description: shortDescription + longDescription (EN + BN)
+  const [shortDescription, setShortDescription] = useState<string>("");
+  const [shortDescriptionBn, setShortDescriptionBn] = useState<string>("");
+  const [longDescription, setLongDescription] = useState<string>("");
+  const [longDescriptionBn, setLongDescriptionBn] = useState<string>("");
+
+  // Active tab for description section (en | bn)
+  const [descTab, setDescTab] = useState<"en" | "bn">("en");
 
   // New fields
   const [section, setSection] = useState<string>("none");
@@ -159,10 +164,6 @@ const AddForm: React.FC<ProductFormProps> = ({
   const [success, setSuccess] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Flag to prevent infinite loops
-  const [isUpdatingFromPrice, setIsUpdatingFromPrice] = useState(false);
-  const [isUpdatingFromDiscount, setIsUpdatingFromDiscount] = useState(false);
-
   // Fetch subcategories when category changes
   useEffect(() => {
     const fetchSubCategories = async () => {
@@ -171,12 +172,10 @@ const AddForm: React.FC<ProductFormProps> = ({
         setSubCategoryId("");
         return;
       }
-
       setIsLoadingSubCategories(true);
       try {
         const response = await fetch(`/api/subcategory?categoryId=${categoryId}`);
         const data = await response.json();
-
         if (data.success && data.data) {
           setSubCategories(data.data);
         } else {
@@ -189,47 +188,35 @@ const AddForm: React.FC<ProductFormProps> = ({
         setIsLoadingSubCategories(false);
       }
     };
-
     fetchSubCategories();
   }, [categoryId]);
 
-  // Reset subcategory when category changes
   useEffect(() => {
     setSubCategoryId("");
   }, [categoryId]);
 
-  // Calculate discount from price and oldPrice
+  // Price/Discount helpers
   const calculateDiscountFromPrices = (regularPrice: number, sellingPrice: number, type: string) => {
-    if (regularPrice <= 0 || sellingPrice <= 0 || regularPrice <= sellingPrice) {
-      return 0;
-    }
+    if (regularPrice <= 0 || sellingPrice <= 0 || regularPrice <= sellingPrice) return 0;
     if (type === "percentage") {
       return Math.round(((regularPrice - sellingPrice) / regularPrice) * 100);
-    } else {
-      return regularPrice - sellingPrice;
     }
+    return regularPrice - sellingPrice;
   };
 
-  // Calculate selling price from regular price and discount
   const calculatePriceFromDiscount = (regularPrice: number, discountAmount: number, type: string) => {
-    if (regularPrice <= 0 || discountAmount <= 0) {
-      return regularPrice;
-    }
+    if (regularPrice <= 0 || discountAmount <= 0) return regularPrice;
     if (type === "percentage") {
-      const calculatedPrice = regularPrice - (regularPrice * discountAmount) / 100;
-      return Math.round(calculatedPrice);
-    } else {
-      const calculatedPrice = regularPrice - discountAmount;
-      return calculatedPrice > 0 ? calculatedPrice : 0;
+      return Math.round(regularPrice - (regularPrice * discountAmount) / 100);
     }
+    const calculated = regularPrice - discountAmount;
+    return calculated > 0 ? calculated : 0;
   };
 
-  // Handle regular price change
   const handleOldPriceChange = (value: number) => {
     setOldPrice(value);
     if (value > 0 && price > 0 && value > price) {
-      const newDiscount = calculateDiscountFromPrices(value, price, discountType);
-      setDiscount(newDiscount);
+      setDiscount(calculateDiscountFromPrices(value, price, discountType));
     } else if (value > 0 && price > 0 && value <= price) {
       setPrice(value);
       setDiscount(0);
@@ -239,44 +226,36 @@ const AddForm: React.FC<ProductFormProps> = ({
     }
   };
 
-  // Handle selling price change
   const handlePriceChange = (value: number) => {
     setPrice(value);
     if (oldPrice > 0 && value < oldPrice) {
-      const newDiscount = calculateDiscountFromPrices(oldPrice, value, discountType);
-      setDiscount(newDiscount);
+      setDiscount(calculateDiscountFromPrices(oldPrice, value, discountType));
     } else if (oldPrice > 0 && value >= oldPrice) {
       setDiscount(0);
-      if (value > oldPrice) {
-        setOldPrice(value);
-      }
+      if (value > oldPrice) setOldPrice(value);
     } else if (oldPrice === 0 && value > 0) {
       setOldPrice(value);
       setDiscount(0);
     }
   };
 
-  // Handle discount type change
   const handleDiscountTypeChange = (type: string) => {
     setDiscountType(type);
     if (oldPrice > 0 && price > 0 && oldPrice > price) {
-      const newDiscount = calculateDiscountFromPrices(oldPrice, price, type);
-      setDiscount(newDiscount);
+      setDiscount(calculateDiscountFromPrices(oldPrice, price, type));
     }
   };
 
-  // Handle discount amount change
   const handleDiscountChange = (value: number) => {
     setDiscount(value);
     if (oldPrice > 0 && value > 0) {
-      const newPrice = calculatePriceFromDiscount(oldPrice, value, discountType);
-      setPrice(newPrice);
+      setPrice(calculatePriceFromDiscount(oldPrice, value, discountType));
     } else if (value === 0 && oldPrice > 0) {
       setPrice(oldPrice);
     }
   };
 
-  // Cleanup preview URLs on unmount
+  // Cleanup
   useEffect(() => {
     return () => {
       if (imagePreview) URL.revokeObjectURL(imagePreview);
@@ -288,17 +267,11 @@ const AddForm: React.FC<ProductFormProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        toast.error(
-          language === 'bn' ? "শুধু ইমেজ ফাইল সাপোর্টেড" : "Only image files are supported",
-        );
+        toast.error(language === 'bn' ? "শুধু ইমেজ ফাইল সাপোর্টেড" : "Only image files are supported");
         return;
       }
       if (file.size > 2 * 1024 * 1024) {
-        toast.error(
-          language === 'bn'
-            ? "ইমেজ সাইজ 2MB এর কম হতে হবে"
-            : "Image size must be less than 2MB",
-        );
+        toast.error(language === 'bn' ? "ইমেজ সাইজ 2MB এর কম হতে হবে" : "Image size must be less than 2MB");
         return;
       }
       setImageFile(file);
@@ -310,27 +283,17 @@ const AddForm: React.FC<ProductFormProps> = ({
     const files = Array.from(e.target.files || []);
     const validFiles = files.filter((file) => {
       if (!file.type.startsWith("image/")) {
-        toast.error(
-          language === 'bn'
-            ? `শুধু ইমেজ ফাইল সাপোর্টেড: ${file.name}`
-            : `Only image files supported: ${file.name}`,
-        );
+        toast.error(language === 'bn' ? `শুধু ইমেজ ফাইল সাপোর্টেড: ${file.name}` : `Only image files supported: ${file.name}`);
         return false;
       }
       if (file.size > 2 * 1024 * 1024) {
-        toast.error(
-          language === 'bn'
-            ? `${file.name} সাইজ 2MB এর কম হতে হবে`
-            : `${file.name} size must be less than 2MB`,
-        );
+        toast.error(language === 'bn' ? `${file.name} সাইজ 2MB এর কম হতে হবে` : `${file.name} size must be less than 2MB`);
         return false;
       }
       return true;
     });
-
     setMultiImages(validFiles);
-    const urls = validFiles.map((file) => URL.createObjectURL(file));
-    setMultiImagePreviews(urls);
+    setMultiImagePreviews(validFiles.map((file) => URL.createObjectURL(file)));
   };
 
   const removeMultiImage = (index: number) => {
@@ -345,17 +308,11 @@ const AddForm: React.FC<ProductFormProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith("video/")) {
-        toast.error(
-          language === 'bn' ? "শুধু ভিডিও ফাইল সাপোর্টেড" : "Only video files are supported",
-        );
+        toast.error(language === 'bn' ? "শুধু ভিডিও ফাইল সাপোর্টেড" : "Only video files are supported");
         return;
       }
       if (file.size > 50 * 1024 * 1024) {
-        toast.error(
-          language === 'bn'
-            ? "ভিডিও সাইজ 50MB এর কম হতে হবে"
-            : "Video size must be less than 50MB",
-        );
+        toast.error(language === 'bn' ? "ভিডিও সাইজ 50MB এর কম হতে হবে" : "Video size must be less than 50MB");
         return;
       }
       setVideoFile(file);
@@ -363,95 +320,56 @@ const AddForm: React.FC<ProductFormProps> = ({
     }
   };
 
-  const removeVideo = () => {
-    setVideoFile(null);
-    setVideoName("");
-  };
-
-  const addTextFormatting = (type: string, target: "en" | "bn") => {
-    const formatChars: Record<string, [string, string]> = {
-      bold: ["**", "**"],
-      italic: ["*", "*"],
-      heading: ["### ", ""],
-      list: ["- ", ""],
-      link: ["[", "](https://...)"],
-    };
-    const [prefix, suffix] = formatChars[type] || ["", ""];
-    if (target === "en") {
-      setDescription((prev) => prev + `${prefix}New Text${suffix}`);
-    } else {
-      setDescriptionBn((prev) => prev + `${prefix}নতুন টেক্সট${suffix}`);
-    }
-  };
-
   const filteredSizes = sizes.filter((s) =>
-    (language === 'bn' ? s.nameBn || s.name : s.name)
-      .toLowerCase()
-      .includes(sizeSearch.toLowerCase()),
+    (language === 'bn' ? s.nameBn || s.name : s.name).toLowerCase().includes(sizeSearch.toLowerCase()),
   );
 
   const filteredColors = colors.filter((c) =>
-    (language === 'bn' ? c.nameBn || c.name : c.name)
-      .toLowerCase()
-      .includes(colorSearch.toLowerCase()),
+    (language === 'bn' ? c.nameBn || c.name : c.name).toLowerCase().includes(colorSearch.toLowerCase()),
   );
 
   const toggleSize = (sizeId: string) => {
-    setSelectedSizeIds((prev) =>
-      prev.includes(sizeId)
-        ? prev.filter((id) => id !== sizeId)
-        : [...prev, sizeId],
-    );
+    setSelectedSizeIds((prev) => prev.includes(sizeId) ? prev.filter((id) => id !== sizeId) : [...prev, sizeId]);
   };
 
   const toggleColor = (colorId: string) => {
-    setSelectedColorIds((prev) =>
-      prev.includes(colorId)
-        ? prev.filter((id) => id !== colorId)
-        : [...prev, colorId],
-    );
+    setSelectedColorIds((prev) => prev.includes(colorId) ? prev.filter((id) => id !== colorId) : [...prev, colorId]);
+  };
+
+  const resetForm = () => {
+    setName(""); setNameBn(""); setPrice(0); setOldPrice(0);
+    setDiscount(0); setDiscountType("percentage"); setStock(0);
+    setCategoryId(""); setSubCategoryId(""); setBrandId("");
+    setSelectedSizeIds([]); setSelectedColorIds([]);
+    setShortDescription(""); setShortDescriptionBn("");
+    setLongDescription(""); setLongDescriptionBn("");
+    setSection("none"); setBadge("none"); setProductType("simple");
+    setImageFile(null); setImagePreview("");
+    setMultiImages([]); setMultiImagePreviews([]);
+    setVideoFile(null); setVideoName("");
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!name.trim()) {
-      setError(language === 'bn' ? "পণ্যের নাম দিন" : "Enter product name");
       toast.error(language === 'bn' ? "পণ্যের নাম দিন" : "Enter product name");
       return;
     }
-
     if (!price || price <= 0) {
-      setError(language === 'bn' ? "সঠিক মূল্য দিন" : "Enter valid price");
       toast.error(language === 'bn' ? "সঠিক মূল্য দিন" : "Enter valid price");
       return;
     }
-
     if (!imageFile && !imagePreview) {
-      setError(language === 'bn' ? "প্রধান ছবি নির্বাচন করুন" : "Select main image");
       toast.error(language === 'bn' ? "প্রধান ছবি নির্বাচন করুন" : "Select main image");
       return;
     }
-
-    const categoryExists = categories.some(
-      (c) => (c._id || c.id) === categoryId,
-    );
-    if (!categoryExists) {
-      toast.error(
-        language === 'bn'
-          ? "সিলেক্টেড ক্যাটাগরি বিদ্যমান নেই"
-          : "Selected category does not exist",
-      );
+    if (!categories.some((c) => (c._id || c.id) === categoryId)) {
+      toast.error(language === 'bn' ? "সিলেক্টেড ক্যাটাগরি বিদ্যমান নেই" : "Selected category does not exist");
       return;
     }
-
-    const brandExists = brands.some((b) => (b._id || b.id) === brandId);
-    if (!brandExists) {
-      toast.error(
-        language === 'bn'
-          ? "সিলেক্টেড ব্র্যান্ড বিদ্যমান নেই"
-          : "Selected brand does not exist",
-      );
+    if (!brands.some((b) => (b._id || b.id) === brandId)) {
+      toast.error(language === 'bn' ? "সিলেক্টেড ব্র্যান্ড বিদ্যমান নেই" : "Selected brand does not exist");
       return;
     }
 
@@ -473,84 +391,39 @@ const AddForm: React.FC<ProductFormProps> = ({
     formData.append("brand", brandId);
     formData.append("sizes", JSON.stringify(selectedSizeIds));
     formData.append("colors", JSON.stringify(selectedColorIds));
-    formData.append("description", description);
-    formData.append("descriptionBn", descriptionBn || description);
+
+    // ✅ Updated description fields
+    formData.append("shortDescription", shortDescription);
+    formData.append("shortDescriptionBn", shortDescriptionBn || shortDescription);
+    formData.append("longDescription", longDescription);
+    formData.append("longDescriptionBn", longDescriptionBn || longDescription);
+
     formData.append("section", section);
     formData.append("badge", badge);
     formData.append("productType", productType);
 
-    if (imageFile) {
-      formData.append("image", imageFile);
-    }
-
-    multiImages.forEach((file) => {
-      formData.append("multiImages", file);
-    });
-
-    if (videoFile) {
-      formData.append("video", videoFile);
-    }
+    if (imageFile) formData.append("image", imageFile);
+    multiImages.forEach((file) => formData.append("multiImages", file));
+    if (videoFile) formData.append("video", videoFile);
 
     try {
-      const res = await fetch("/api/product", {
-        method: "POST",
-        body: formData,
-      });
-
+      const res = await fetch("/api/product", { method: "POST", body: formData });
       const data: ApiResponse = await res.json();
 
       if (!res.ok) {
-        throw new Error(
-          data.error ||
-          (language === 'bn' ? "পণ্য সংরক্ষণ করতে ব্যর্থ" : "Failed to save product"),
-        );
+        throw new Error(data.error || (language === 'bn' ? "পণ্য সংরক্ষণ করতে ব্যর্থ" : "Failed to save product"));
       }
 
       if (data.success && data.data) {
-        toast.success(
-          data.message ||
-          (language === 'bn'
-            ? "পণ্য সফলভাবে সংরক্ষণ হয়েছে!"
-            : "Product saved successfully!"),
-        );
-
-        // Reset form
-        setName("");
-        setNameBn("");
-        setPrice(0);
-        setOldPrice(0);
-        setDiscount(0);
-        setDiscountType("percentage");
-        setStock(0);
-        setCategoryId("");
-        setSubCategoryId("");
-        setBrandId("");
-        setSelectedSizeIds([]);
-        setSelectedColorIds([]);
-        setDescription("");
-        setDescriptionBn("");
-        setSection("none");
-        setBadge("none");
-        setProductType("simple");
-        setImageFile(null);
-        setImagePreview("");
-        setMultiImages([]);
-        setMultiImagePreviews([]);
-        setVideoFile(null);
-        setVideoName("");
+        toast.success(data.message || (language === 'bn' ? "পণ্য সফলভাবে সংরক্ষণ হয়েছে!" : "Product saved successfully!"));
+        resetForm();
         setSuccess(true);
-
         setTimeout(() => setSuccess(false), 3000);
         router.push('/dashboard/products');
       }
     } catch (error) {
-      console.error("Error saving product:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : language === 'bn'
-            ? "পণ্য সংরক্ষণ করতে ব্যর্থ"
-            : "Failed to save product";
+      const errorMessage = error instanceof Error ? error.message
+        : language === 'bn' ? "পণ্য সংরক্ষণ করতে ব্যর্থ" : "Failed to save product";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -570,40 +443,37 @@ const AddForm: React.FC<ProductFormProps> = ({
               {language === 'bn' ? "নতুন পণ্য যোগ করুন" : "Add New Product"}
             </h2>
             <p className="text-sm text-gray-500 mt-0.5">
-              {language === 'bn'
-                ? "পণ্যের সমস্ত বিবরণ এবং মিডিয়া ফাইল আপলোড করুন"
-                : "Enter all details and upload media files"}
+              {language === 'bn' ? "পণ্যের সমস্ত বিবরণ এবং মিডিয়া ফাইল আপলোড করুন" : "Enter all details and upload media files"}
             </p>
           </div>
         </div>
-        <Link href={`/dashboard/products`} className="px-6 py-3 bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-200 transition-all">Back</Link>
+        <Link href="/dashboard/products" className="px-6 py-3 bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-200 transition-all">
+          {language === 'bn' ? "ফিরে যান" : "Back"}
+        </Link>
       </div>
 
       <form onSubmit={handleSubmit} className="p-6">
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg text-sm">
-            {error}
-          </div>
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg text-sm">{error}</div>
         )}
         {success && (
           <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-r-lg text-sm flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-green-500" />
-            {language === 'bn'
-              ? "পণ্য সফলভাবে যোগ করা হয়েছে!"
-              : "Product added successfully!"}
+            {language === 'bn' ? "পণ্য সফলভাবে যোগ করা হয়েছে!" : "Product added successfully!"}
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
+
+            {/* Name */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   {language === 'bn' ? "পণ্যের নাম (ইংরেজি) *" : "Product Name (English) *"}
                 </label>
                 <input
-                  type="text"
-                  value={name}
+                  type="text" value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm disabled:bg-slate-50"
                   disabled={isLoading}
@@ -614,8 +484,7 @@ const AddForm: React.FC<ProductFormProps> = ({
                   {language === 'bn' ? "পণ্যের নাম (বাংলা)" : "Product Name (Bangla)"}
                 </label>
                 <input
-                  type="text"
-                  value={nameBn}
+                  type="text" value={nameBn}
                   onChange={(e) => setNameBn(e.target.value)}
                   className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm disabled:bg-slate-50"
                   disabled={isLoading}
@@ -623,43 +492,41 @@ const AddForm: React.FC<ProductFormProps> = ({
               </div>
             </div>
 
-            {/* Price Section with Discount */}
+            {/* Price */}
             <div className="bg-gray-50 rounded-xl p-4 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    {language === 'bn' ? "নিয়মিত মূল্য (৳)" : "Regular Price (৳)"}
+                    {language === 'bn' ? "নিয়মিত মূল্য (৳)" : "Regular Price (৳)"}
                     <span className="text-xs text-gray-400 ml-1">(ঐচ্ছিক)</span>
                   </label>
                   <input
-                    type="number"
-                    value={oldPrice || ""}
+                    type="number" value={oldPrice || ""}
                     onChange={(e) => handleOldPriceChange(Number(e.target.value))}
                     className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm disabled:bg-slate-50"
                     disabled={isLoading}
-                    placeholder={language === 'bn' ? "নিয়মিত মূল্য" : "Regular price"}
+                    placeholder={language === 'bn' ? "নিয়মিত মূল্য" : "Regular price"}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    {language === 'bn' ? "বিক্রয় মূল্য (৳) *" : "Selling Price (৳) *"}
+                    {language === 'bn' ? "বিক্রয় মূল্য (৳) *" : "Selling Price (৳) *"}
                   </label>
                   <input
-                    type="number"
-                    value={price || ""}
+                    type="number" value={price || ""}
                     onChange={(e) => handlePriceChange(Number(e.target.value))}
                     className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm disabled:bg-slate-50"
                     disabled={isLoading}
-                    placeholder={language === 'bn' ? "বিক্রয় মূল্য" : "Selling price"}
+                    placeholder={language === 'bn' ? "বিক্রয় মূল্য" : "Selling price"}
                   />
                 </div>
               </div>
 
-              {(oldPrice > 0 && oldPrice > price) ? (
+              {oldPrice > 0 && oldPrice > price ? (
                 <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="p-1 bg-purple-100 rounded-lg">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                      <div className="w-2 h-2 bg-purple-500 rounded-full" />
                     </div>
                     <span className="text-sm font-semibold text-purple-700">
                       {language === 'bn' ? "ডিসকাউন্ট তথ্য" : "Discount Information"}
@@ -673,12 +540,12 @@ const AddForm: React.FC<ProductFormProps> = ({
                       <select
                         value={discountType}
                         onChange={(e) => handleDiscountTypeChange(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm disabled:bg-slate-50"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm"
                         disabled={isLoading}
                       >
-                        {DISCOUNT_TYPE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {language === 'bn' ? option.labelBn : option.labelEn}
+                        {DISCOUNT_TYPE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {language === 'bn' ? o.labelBn : o.labelEn}
                           </option>
                         ))}
                       </select>
@@ -690,10 +557,9 @@ const AddForm: React.FC<ProductFormProps> = ({
                           : discountType === "percentage" ? "Discount (%)" : "Discount (৳)"}
                       </label>
                       <input
-                        type="number"
-                        value={discount || ""}
+                        type="number" value={discount || ""}
                         onChange={(e) => handleDiscountChange(Number(e.target.value))}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm disabled:bg-slate-50"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm"
                         disabled={isLoading}
                         placeholder={language === 'bn' ? "ডিসকাউন্ট" : "Discount"}
                         min={0}
@@ -717,14 +583,14 @@ const AddForm: React.FC<ProductFormProps> = ({
               )}
             </div>
 
+            {/* Stock */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   {language === 'bn' ? "স্টক পরিমাণ" : "Stock Quantity"}
                 </label>
                 <input
-                  type="number"
-                  value={stock || ""}
+                  type="number" value={stock || ""}
                   onChange={(e) => setStock(Number(e.target.value))}
                   className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm disabled:bg-slate-50"
                   disabled={isLoading}
@@ -732,22 +598,18 @@ const AddForm: React.FC<ProductFormProps> = ({
               </div>
             </div>
 
+            {/* Brand / Category / SubCategory */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   {language === 'bn' ? "ব্র্যান্ড *" : "Brand *"}
                 </label>
                 <select
-                  value={brandId}
-                  onChange={(e) => setBrandId(e.target.value)}
+                  value={brandId} onChange={(e) => setBrandId(e.target.value)}
                   className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm disabled:bg-slate-50"
                   disabled={isLoading}
                 >
-                  <option value="">
-                    {language === 'bn'
-                      ? "-- ব্র্যান্ড নির্বাচন করুন --"
-                      : "-- Select Brand --"}
-                  </option>
+                  <option value="">{language === 'bn' ? "-- ব্র্যান্ড নির্বাচন করুন --" : "-- Select Brand --"}</option>
                   {brands.map((b) => (
                     <option key={b._id || b.id} value={b._id || b.id}>
                       {language === 'bn' ? b.nameBn || b.name : b.name}
@@ -760,14 +622,11 @@ const AddForm: React.FC<ProductFormProps> = ({
                   {language === 'bn' ? "ক্যাটাগরি *" : "Category *"}
                 </label>
                 <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
+                  value={categoryId} onChange={(e) => setCategoryId(e.target.value)}
                   className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm disabled:bg-slate-50"
                   disabled={isLoading}
                 >
-                  <option value="">
-                    {language === 'bn' ? "-- ক্যাটাগরি নির্বাচন করুন --" : "-- Select Category --"}
-                  </option>
+                  <option value="">{language === 'bn' ? "-- ক্যাটাগরি নির্বাচন করুন --" : "-- Select Category --"}</option>
                   {categories.map((c) => (
                     <option key={c._id || c.id} value={c._id || c.id}>
                       {language === 'bn' ? c.nameBn || c.name : c.name}
@@ -781,14 +640,11 @@ const AddForm: React.FC<ProductFormProps> = ({
                   <span className="text-xs text-gray-400 ml-1">(ঐচ্ছিক)</span>
                 </label>
                 <select
-                  value={subCategoryId}
-                  onChange={(e) => setSubCategoryId(e.target.value)}
+                  value={subCategoryId} onChange={(e) => setSubCategoryId(e.target.value)}
                   className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm disabled:bg-slate-50"
                   disabled={isLoading || isLoadingSubCategories}
                 >
-                  <option value="">
-                    {language === 'bn' ? "-- সাব-ক্যাটাগরি নির্বাচন করুন --" : "-- Select Subcategory --"}
-                  </option>
+                  <option value="">{language === 'bn' ? "-- সাব-ক্যাটাগরি নির্বাচন করুন --" : "-- Select Subcategory --"}</option>
                   {subCategories.map((sub) => (
                     <option key={sub._id || sub.id} value={sub._id || sub.id}>
                       {language === 'bn' ? sub.nameBn || sub.name : sub.name}
@@ -796,40 +652,31 @@ const AddForm: React.FC<ProductFormProps> = ({
                   ))}
                 </select>
                 {isLoadingSubCategories && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    {language === 'bn' ? "সাব-ক্যাটাগরি লোড হচ্ছে..." : "Loading subcategories..."}
-                  </p>
+                  <p className="text-xs text-gray-400 mt-1">{language === 'bn' ? "সাব-ক্যাটাগরি লোড হচ্ছে..." : "Loading subcategories..."}</p>
                 )}
                 {!isLoadingSubCategories && subCategories.length === 0 && categoryId && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    {language === 'bn' ? "এই ক্যাটাগরির অধীনে কোনো সাব-ক্যাটাগরি নেই" : "No subcategories found"}
-                  </p>
+                  <p className="text-xs text-amber-600 mt-1">{language === 'bn' ? "এই ক্যাটাগরির অধীনে কোনো সাব-ক্যাটাগরি নেই" : "No subcategories found"}</p>
                 )}
               </div>
             </div>
 
-            {/* Section & Badge */}
+            {/* Section / Badge / Product Type */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   {language === 'bn' ? "সেকশন" : "Section"}
                 </label>
                 <select
-                  value={section}
-                  onChange={(e) => setSection(e.target.value)}
+                  value={section} onChange={(e) => setSection(e.target.value)}
                   className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm disabled:bg-slate-50"
                   disabled={isLoading}
                 >
-                  {SECTION_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {language === 'bn' ? option.labelBn : option.labelEn}
-                    </option>
+                  {SECTION_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{language === 'bn' ? o.labelBn : o.labelEn}</option>
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  {language === 'bn'
-                    ? "হোমপেজের কোন সেকশনে পণ্যটি দেখাবে?"
-                    : "Which section will this product appear in on the homepage?"}
+                  {language === 'bn' ? "হোমপেজের কোন সেকশনে পণ্যটি দেখাবে?" : "Which section will this product appear in?"}
                 </p>
               </div>
               <div>
@@ -837,21 +684,16 @@ const AddForm: React.FC<ProductFormProps> = ({
                   {language === 'bn' ? "ব্যাজ" : "Badge"}
                 </label>
                 <select
-                  value={badge}
-                  onChange={(e) => setBadge(e.target.value)}
+                  value={badge} onChange={(e) => setBadge(e.target.value)}
                   className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm disabled:bg-slate-50"
                   disabled={isLoading}
                 >
-                  {BADGE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {language === 'bn' ? option.labelBn : option.labelEn}
-                    </option>
+                  {BADGE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{language === 'bn' ? o.labelBn : o.labelEn}</option>
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  {language === 'bn'
-                    ? "পণ্যের কার্ডে একটি বিশেষ ব্যাজ দেখানোর জন্য"
-                    : "Show a special badge on the product card"}
+                  {language === 'bn' ? "পণ্যের কার্ডে একটি বিশেষ ব্যাজ দেখানোর জন্য" : "Show a special badge on the product card"}
                 </p>
               </div>
               <div>
@@ -859,22 +701,20 @@ const AddForm: React.FC<ProductFormProps> = ({
                   {language === 'bn' ? "প্রোডাক্ট টাইপ" : "Product Type"}
                 </label>
                 <select
-                  value={productType}
-                  onChange={(e) => setProductType(e.target.value)}
+                  value={productType} onChange={(e) => setProductType(e.target.value)}
                   className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm disabled:bg-slate-50"
                   disabled={isLoading}
                 >
-                  {PRODUCT_TYPE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {language === 'bn' ? option.labelBn : option.labelEn}
-                    </option>
+                  {PRODUCT_TYPE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{language === 'bn' ? o.labelBn : o.labelEn}</option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {/* Sizes & Colors Dropdowns */}
+            {/* Sizes & Colors */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Size Dropdown */}
               <div className="relative">
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   {language === 'bn' ? "সাইজ" : "Sizes"}
@@ -887,18 +727,8 @@ const AddForm: React.FC<ProductFormProps> = ({
                 >
                   <span className="truncate text-gray-600">
                     {selectedSizeIds.length > 0
-                      ? selectedSizeIds
-                        .map((id) => {
-                          const size = sizes.find(
-                            (s) => (s._id || s.id) === id,
-                          );
-                          return size?.name;
-                        })
-                        .filter(Boolean)
-                        .join(", ")
-                      : language === 'bn'
-                        ? "সাইজ নির্বাচন করুন..."
-                        : "Select sizes..."}
+                      ? selectedSizeIds.map((id) => sizes.find((s) => (s._id || s.id) === id)?.name).filter(Boolean).join(", ")
+                      : language === 'bn' ? "সাইজ নির্বাচন করুন..." : "Select sizes..."}
                   </span>
                   <ChevronDown className="w-4 h-4 text-gray-400" />
                 </button>
@@ -909,9 +739,7 @@ const AddForm: React.FC<ProductFormProps> = ({
                         <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
                         <input
                           type="text"
-                          placeholder={
-                            language === 'bn' ? "সাইজ খুঁজুন..." : "Search sizes..."
-                          }
+                          placeholder={language === 'bn' ? "সাইজ খুঁজুন..." : "Search sizes..."}
                           value={sizeSearch}
                           onChange={(e) => setSizeSearch(e.target.value)}
                           className="w-full pl-9 pr-3 py-1.5 text-sm bg-gray-50 rounded-lg"
@@ -921,13 +749,11 @@ const AddForm: React.FC<ProductFormProps> = ({
                     <div className="max-h-48 overflow-y-auto p-2 flex flex-wrap gap-1.5">
                       {filteredSizes.map((size) => (
                         <button
-                          key={size._id || size.id}
-                          type="button"
+                          key={size._id || size.id} type="button"
                           onClick={() => toggleSize(size._id || size.id)}
                           className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${selectedSizeIds.includes(size._id || size.id)
-                              ? "bg-indigo-50 border-indigo-200 text-indigo-700"
-                              : "border-gray-200 hover:bg-gray-50"
-                            }`}
+                            ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+                            : "border-gray-200 hover:bg-gray-50"}`}
                         >
                           {language === 'bn' ? size.nameBn || size.name : size.name}
                         </button>
@@ -937,6 +763,7 @@ const AddForm: React.FC<ProductFormProps> = ({
                 )}
               </div>
 
+              {/* Color Dropdown */}
               <div className="relative">
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   {language === 'bn' ? "রং" : "Colors"}
@@ -949,20 +776,11 @@ const AddForm: React.FC<ProductFormProps> = ({
                 >
                   <span className="truncate text-gray-600">
                     {selectedColorIds.length > 0
-                      ? selectedColorIds
-                        .map((id) => {
-                          const color = colors.find(
-                            (c) => (c._id || c.id) === id,
-                          );
-                          return language === 'bn'
-                            ? color?.nameBn || color?.name
-                            : color?.name;
-                        })
-                        .filter(Boolean)
-                        .join(", ")
-                      : language === 'bn'
-                        ? "রং নির্বাচন করুন..."
-                        : "Select colors..."}
+                      ? selectedColorIds.map((id) => {
+                        const color = colors.find((c) => (c._id || c.id) === id);
+                        return language === 'bn' ? color?.nameBn || color?.name : color?.name;
+                      }).filter(Boolean).join(", ")
+                      : language === 'bn' ? "রং নির্বাচন করুন..." : "Select colors..."}
                   </span>
                   <ChevronDown className="w-4 h-4 text-gray-400" />
                 </button>
@@ -973,9 +791,7 @@ const AddForm: React.FC<ProductFormProps> = ({
                         <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
                         <input
                           type="text"
-                          placeholder={
-                            language === 'bn' ? "রং খুঁজুন..." : "Search colors..."
-                          }
+                          placeholder={language === 'bn' ? "রং খুঁজুন..." : "Search colors..."}
                           value={colorSearch}
                           onChange={(e) => setColorSearch(e.target.value)}
                           className="w-full pl-9 pr-3 py-1.5 text-sm bg-gray-50 rounded-lg"
@@ -985,18 +801,13 @@ const AddForm: React.FC<ProductFormProps> = ({
                     <div className="max-h-48 overflow-y-auto p-2 flex flex-wrap gap-1.5">
                       {filteredColors.map((color) => (
                         <button
-                          key={color._id || color.id}
-                          type="button"
+                          key={color._id || color.id} type="button"
                           onClick={() => toggleColor(color._id || color.id)}
                           className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${selectedColorIds.includes(color._id || color.id)
-                              ? "bg-indigo-50 border-indigo-200 text-indigo-700"
-                              : "border-gray-200 hover:bg-gray-50"
-                            }`}
+                            ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+                            : "border-gray-200 hover:bg-gray-50"}`}
                         >
-                          <span
-                            className="w-3 h-3 rounded-full border"
-                            style={{ backgroundColor: color.hex }}
-                          />
+                          <span className="w-3 h-3 rounded-full border" style={{ backgroundColor: color.hex }} />
                           {language === 'bn' ? color.nameBn || color.name : color.name}
                         </button>
                       ))}
@@ -1006,87 +817,101 @@ const AddForm: React.FC<ProductFormProps> = ({
               </div>
             </div>
 
-            {/* Description Editors */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  {language === 'bn' ? "বিবরণ (ইংরেজি)" : "Description (English)"}
-                </label>
-                <div className="border border-gray-200 rounded-xl overflow-hidden">
-                  <div className="flex items-center gap-1 bg-gray-50 px-3 py-2 border-b">
-                    <button
-                      type="button"
-                      onClick={() => addTextFormatting("bold", "en")}
-                      className="p-1 hover:bg-white rounded transition-colors"
-                    >
-                      <Bold className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => addTextFormatting("italic", "en")}
-                      className="p-1 hover:bg-white rounded transition-colors"
-                    >
-                      <Italic className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => addTextFormatting("list", "en")}
-                      className="p-1 hover:bg-white rounded transition-colors"
-                    >
-                      <List className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <textarea
-                    rows={4}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full p-3 bg-white border-0 focus:ring-0 focus:outline-none text-sm resize-none"
-                    disabled={isLoading}
-                  />
-                </div>
+            {/* ✅ Description Section — Quill Editor */}
+            <div className="space-y-4">
+              {/* Language Tab Toggle */}
+              <div className="flex items-center gap-1 border-b border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setDescTab("en")}
+                  className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-all border-b-2 -mb-px ${descTab === "en"
+                    ? "border-indigo-500 text-indigo-600 bg-indigo-50/50"
+                    : "border-transparent text-gray-500 hover:text-gray-700"}`}
+                >
+                  🇬🇧 English
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDescTab("bn")}
+                  className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-all border-b-2 -mb-px ${descTab === "bn"
+                    ? "border-indigo-500 text-indigo-600 bg-indigo-50/50"
+                    : "border-transparent text-gray-500 hover:text-gray-700"}`}
+                >
+                  🇧🇩 বাংলা
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  {language === 'bn' ? "বিবরণ (বাংলা)" : "Description (Bangla)"}
-                </label>
-                <div className="border border-gray-200 rounded-xl overflow-hidden">
-                  <div className="flex items-center gap-1 bg-gray-50 px-3 py-2 border-b">
-                    <button
-                      type="button"
-                      onClick={() => addTextFormatting("bold", "bn")}
-                      className="p-1 hover:bg-white rounded transition-colors"
-                    >
-                      <Bold className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => addTextFormatting("italic", "bn")}
-                      className="p-1 hover:bg-white rounded transition-colors"
-                    >
-                      <Italic className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => addTextFormatting("list", "bn")}
-                      className="p-1 hover:bg-white rounded transition-colors"
-                    >
-                      <List className="w-4 h-4" />
-                    </button>
+
+              {descTab === "en" ? (
+                <div className="space-y-5">
+                  {/* Short Description EN */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Short Description
+                      <span className="ml-2 text-xs font-normal text-gray-400">(সংক্ষিপ্ত বিবরণ — product card / SEO)</span>
+                    </label>
+                    <TipTapEditor
+                      value={shortDescription}
+                      onChange={setShortDescription}
+                      placeholder="Write a short product description..."
+                      disabled={isLoading}
+                      minHeight="100px"
+                    />
                   </div>
-                  <textarea
-                    rows={4}
-                    value={descriptionBn}
-                    onChange={(e) => setDescriptionBn(e.target.value)}
-                    className="w-full p-3 bg-white border-0 focus:ring-0 focus:outline-none text-sm resize-none"
-                    disabled={isLoading}
-                  />
+
+                  {/* Long Description EN */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Long Description
+                      <span className="ml-2 text-xs font-normal text-gray-400">(বিস্তারিত বিবরণ — product detail page)</span>
+                    </label>
+                    <TipTapEditor
+                      value={longDescription}
+                      onChange={setLongDescription}
+                      placeholder="Write a detailed product description with features, specs, usage..."
+                      disabled={isLoading}
+                      minHeight="180px"
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-5">
+                  {/* Short Description BN */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      সংক্ষিপ্ত বিবরণ (বাংলা)
+                      <span className="ml-2 text-xs font-normal text-gray-400">(Short Description — product card / SEO)</span>
+                    </label>
+                    <TipTapEditor
+                      value={shortDescriptionBn}
+                      onChange={setShortDescriptionBn}
+                      placeholder="পণ্যের সংক্ষিপ্ত বিবরণ লিখুন..."
+                      disabled={isLoading}
+                      minHeight="100px"
+                    />
+                  </div>
+
+                  {/* Long Description BN */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      বিস্তারিত বিবরণ (বাংলা)
+                      <span className="ml-2 text-xs font-normal text-gray-400">(Long Description — product detail page)</span>
+                    </label>
+                    <TipTapEditor
+                      value={longDescriptionBn}
+                      onChange={setLongDescriptionBn}
+                      placeholder="পণ্যের বিস্তারিত বিবরণ, বৈশিষ্ট্য, ব্যবহার পদ্ধতি লিখুন..."
+                      disabled={isLoading}
+                      minHeight="180px"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Media Upload Section */}
           <div className="space-y-6">
+            {/* Main Image */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                 {language === 'bn' ? "প্রধান ছবি *" : "Main Image *"}
@@ -1094,17 +919,10 @@ const AddForm: React.FC<ProductFormProps> = ({
               <div className="rounded-xl border-2 border-dashed border-gray-300 p-6 text-center hover:border-indigo-400 transition-colors">
                 {imagePreview ? (
                   <div className="relative inline-block">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="h-28 w-28 object-cover rounded-xl mx-auto"
-                    />
+                    <img src={imagePreview} alt="Preview" className="h-28 w-28 object-cover rounded-xl mx-auto" />
                     <button
                       type="button"
-                      onClick={() => {
-                        setImageFile(null);
-                        setImagePreview("");
-                      }}
+                      onClick={() => { setImageFile(null); setImagePreview(""); }}
                       className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -1116,18 +934,13 @@ const AddForm: React.FC<ProductFormProps> = ({
                 <div className="mt-4">
                   <label className="cursor-pointer bg-white font-semibold text-indigo-600 hover:text-indigo-500">
                     <span>{language === 'bn' ? "ফাইল সিলেক্ট করুন" : "Upload a file"}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleMainImageChange}
-                      className="sr-only"
-                      disabled={isLoading}
-                    />
+                    <input type="file" accept="image/*" onChange={handleMainImageChange} className="sr-only" disabled={isLoading} />
                   </label>
                 </div>
               </div>
             </div>
 
+            {/* Multiple Images */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                 {language === 'bn' ? "একাধিক ছবি" : "Multiple Images"}
@@ -1137,11 +950,7 @@ const AddForm: React.FC<ProductFormProps> = ({
                   <div className="flex flex-wrap gap-2 justify-center mb-4">
                     {multiImagePreviews.map((url, idx) => (
                       <div key={idx} className="relative">
-                        <img
-                          src={url}
-                          alt={`Preview ${idx + 1}`}
-                          className="h-14 w-14 object-cover rounded-lg"
-                        />
+                        <img src={url} alt={`Preview ${idx + 1}`} className="h-14 w-14 object-cover rounded-lg" />
                         <button
                           type="button"
                           onClick={() => removeMultiImage(idx)}
@@ -1154,21 +963,13 @@ const AddForm: React.FC<ProductFormProps> = ({
                   </div>
                 )}
                 <label className="cursor-pointer bg-white font-semibold text-indigo-600 hover:text-indigo-500">
-                  <span>
-                    {language === 'bn' ? "ফাইল সিলেক্ট করুন" : "Upload multiple files"}
-                  </span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleMultiImagesChange}
-                    className="sr-only"
-                    disabled={isLoading}
-                  />
+                  <span>{language === 'bn' ? "ফাইল সিলেক্ট করুন" : "Upload multiple files"}</span>
+                  <input type="file" multiple accept="image/*" onChange={handleMultiImagesChange} className="sr-only" disabled={isLoading} />
                 </label>
               </div>
             </div>
 
+            {/* Video */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                 {language === 'bn' ? "ভিডিও" : "Video"}
@@ -1177,63 +978,26 @@ const AddForm: React.FC<ProductFormProps> = ({
                 {videoName && (
                   <div className="flex items-center justify-between gap-2 mb-3 px-3 py-2 bg-indigo-50 rounded-lg">
                     <Video className="w-4 h-4 text-indigo-600" />
-                    <span className="text-xs text-indigo-600 flex-1 truncate">
-                      {videoName}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={removeVideo}
-                      className="p-0.5 text-red-500 hover:text-red-600"
-                    >
+                    <span className="text-xs text-indigo-600 flex-1 truncate">{videoName}</span>
+                    <button type="button" onClick={() => { setVideoFile(null); setVideoName(""); }} className="p-0.5 text-red-500 hover:text-red-600">
                       <X className="w-3 h-3" />
                     </button>
                   </div>
                 )}
                 <label className="cursor-pointer bg-white font-semibold text-indigo-600 hover:text-indigo-500">
-                  <span>
-                    {language === 'bn' ? "ভিডিও ফাইল সিলেক্ট করুন" : "Select video file"}
-                  </span>
-                  <input
-                    type="file"
-                    accept="video/*"
-                    onChange={handleVideoChange}
-                    className="sr-only"
-                    disabled={isLoading}
-                  />
+                  <span>{language === 'bn' ? "ভিডিও ফাইল সিলেক্ট করুন" : "Select video file"}</span>
+                  <input type="file" accept="video/*" onChange={handleVideoChange} className="sr-only" disabled={isLoading} />
                 </label>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Action Buttons */}
         <div className="mt-8 flex justify-end gap-3">
           <button
             type="button"
-            onClick={() => {
-              setName("");
-              setNameBn("");
-              setPrice(0);
-              setOldPrice(0);
-              setDiscount(0);
-              setDiscountType("percentage");
-              setStock(0);
-              setCategoryId("");
-              setSubCategoryId("");
-              setBrandId("");
-              setSelectedSizeIds([]);
-              setSelectedColorIds([]);
-              setDescription("");
-              setDescriptionBn("");
-              setSection("none");
-              setBadge("none");
-              setProductType("simple");
-              setImageFile(null);
-              setImagePreview("");
-              setMultiImages([]);
-              setMultiImagePreviews([]);
-              setVideoFile(null);
-              setVideoName("");
-            }}
+            onClick={resetForm}
             className="px-6 py-3 bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-200 transition-all"
             disabled={isLoading}
           >

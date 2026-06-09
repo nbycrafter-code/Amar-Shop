@@ -8,6 +8,8 @@ import { Breadcrumb } from "../../components/Breadcrumb";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { SubSubcategories } from "../../components/SubCategories";
+import Image from "next/image";
+import { CategoryContent } from "./components/CategoryContent";
 
 interface PageSetProps {
   products: any[];
@@ -17,6 +19,7 @@ interface PageSetProps {
   colors?: any[];
   categoryData?: any;
   subcategories?: any[];
+  settings?: any;
 }
 
 export const PageSet = ({
@@ -27,11 +30,22 @@ export const PageSet = ({
   categoryData,
   products = [],
   subcategories = [],
+  settings = {},
 }: PageSetProps) => {
   const { language } = useLanguage();
   const isBn = language === "bn";
   const router = useRouter();
   const { category: categorySlug } = useParams();
+
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#d4382c";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const backgroundColor = settings?.backgroundColor || "#F9FAFB";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const cardBg = settings?.cardBackground || "#FFFFFF";
+  const hoverBg = settings?.hoverBackground || "#F3F4F6";
 
   const currentCategory = useMemo(() => {
     if (categoryData) return categoryData;
@@ -49,7 +63,7 @@ export const PageSet = ({
     colors: [] as string[],
     stones: [] as string[],
     fragrances: [] as string[],
-    priceRange: { min: 0, max: 7000 } as { min: number; max: number },
+    priceRange: { min: 0, max: 10000 } as { min: number; max: number },
     rating: null as number | null,
   });
 
@@ -72,10 +86,10 @@ export const PageSet = ({
     topRated: isBn ? "সর্বোচ্চ রেটেড" : "Top Rated",
     newestFirst: isBn ? "সর্বশেষ প্রথমে" : "Newest First",
     noProductsFound: isBn ? "কোন পণ্য পাওয়া যায়নি" : "No Products Found",
-    noProductsInCategory: (name: string) => isBn 
+    noProductsInCategory: (name: string) => isBn
       ? `${name} ক্যাটাগরিতে কোন পণ্য নেই`
       : `No products found in ${name} category`,
-    noMatchFilters: isBn 
+    noMatchFilters: isBn
       ? "আপনার নির্বাচিত ফিল্টারের সাথে মিলে এমন কোন পণ্য নেই"
       : "No products match your selected filters",
     clearAllFilters: isBn ? "সব ফিল্টার সরান" : "Clear All Filters",
@@ -90,93 +104,116 @@ export const PageSet = ({
     { value: "newest", label: texts.newestFirst },
   ];
 
-  const filteredProducts = useMemo(() => {
-    let filtered = [...products];
+  // Normalize products data
+  const normalizedProducts = useMemo(() => {
+    return products.map(product => ({
+      ...product,
+      categoryId: product.categoryId || product.category?._id || product.category,
+      brandId: product.brandId || product.brand?._id || product.brand,
+      price: product.price || product.salePrice || 0,
+      sizes: Array.isArray(product.sizes) 
+        ? product.sizes.map(s => typeof s === 'object' ? s.name : s)
+        : (product.sizes ? [product.sizes] : []),
+    }));
+  }, [products]);
 
-    // Sidebar category filter
+  // Filter products
+  const filteredProducts = useMemo(() => {
+    let filtered = [...normalizedProducts];
+
+    // Category filter
     if (filters.categories.length > 0) {
-      filtered = filtered.filter((p) => {
+      filtered = filtered.filter((product) => {
+        const productCatId = String(product.categoryId || '');
         const matchingCategory = categories.find(
-          (cat) =>
-            filters.categories.includes(cat.name) ||
-            filters.categories.includes(cat.nameBn)
+          (cat) => String(cat._id) === productCatId || String(cat.id) === productCatId
         );
-        return (
-          matchingCategory &&
-          String(p.categoryId) === String(matchingCategory._id)
-        );
+        
+        if (matchingCategory) {
+          return filters.categories.some(filterCat => 
+            filterCat === matchingCategory.name || 
+            filterCat === matchingCategory.nameBn
+          );
+        }
+        return false;
       });
     }
 
     // Brand filter
     if (filters.brands.length > 0) {
-      filtered = filtered.filter((p) => {
+      filtered = filtered.filter((product) => {
+        const productBrandId = String(product.brandId || '');
         const matchingBrand = brands.find(
-          (b) =>
-            filters.brands.includes(b.name) ||
-            filters.brands.includes(b.nameBn)
+          (b) => String(b._id) === productBrandId
         );
-        return (
-          matchingBrand && String(p.brandId) === String(matchingBrand._id)
+        
+        if (matchingBrand) {
+          return filters.brands.some(filterBrand =>
+            filterBrand === matchingBrand.name ||
+            filterBrand === matchingBrand.nameBn
+          );
+        }
+        return false;
+      });
+    }
+
+    // Size filter
+    if (filters.sizes.length > 0) {
+      filtered = filtered.filter((product) => {
+        if (!product.sizes || product.sizes.length === 0) return false;
+        
+        return product.sizes.some((productSize: string) =>
+          filters.sizes.some(filterSize =>
+            productSize === filterSize
+          )
         );
       });
     }
 
-    // Sizes filter
-    if (filters.sizes.length > 0) {
-      filtered = filtered.filter((p) =>
-        filters.sizes.includes(p.sizes)
-      );
-    }
-
     // Color filter
     if (filters.colors.length > 0) {
-      filtered = filtered.filter((p) => {
-        if (!p.colorIds || p.colorIds.length === 0) return false;
+      filtered = filtered.filter((product) => {
+        if (!product.colorIds || product.colorIds.length === 0) return false;
+        
         const matchingColorIds = colors
-          .filter(
-            (c) =>
-              filters.colors.includes(c.name) ||
-              filters.colors.includes(c.nameBn)
+          .filter((c) => 
+            filters.colors.includes(c.name) ||
+            filters.colors.includes(c.nameBn)
           )
           .map((c) => String(c._id));
-        return p.colorIds.some((colorId: string) =>
+        
+        return product.colorIds.some((colorId: string) =>
           matchingColorIds.includes(String(colorId))
         );
       });
     }
 
     // Price filter
-    filtered = filtered.filter((p) => {
-      const price = p.price || p.salePrice || 0;
-      return (
-        price >= filters.priceRange.min && price <= filters.priceRange.max
-      );
+    filtered = filtered.filter((product) => {
+      const price = product.price || 0;
+      return price >= filters.priceRange.min && price <= filters.priceRange.max;
     });
 
     // Rating filter
     if (typeof filters.rating === "number") {
-      filtered = filtered.filter((p) => (p.rating || 0) >= filters.rating!);
+      filtered = filtered.filter((product) => 
+        (product.rating || 0) >= filters.rating!
+      );
     }
-
+    
     return filtered;
-  }, [products, filters, categories, brands, colors]);
+  }, [normalizedProducts, filters, categories, brands, colors]);
 
+  // Sort products
   const sortedProducts = useMemo(() => {
     let sorted = [...filteredProducts];
-
+    
     switch (sortBy) {
       case "price-low":
-        sorted.sort(
-          (a, b) =>
-            (a.price || a.salePrice || 0) - (b.price || b.salePrice || 0)
-        );
+        sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
         break;
       case "price-high":
-        sorted.sort(
-          (a, b) =>
-            (b.price || b.salePrice || 0) - (a.price || a.salePrice || 0)
-        );
+        sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
         break;
       case "rating":
         sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -191,7 +228,7 @@ export const PageSet = ({
       default:
         break;
     }
-
+    
     return sorted;
   }, [filteredProducts, sortBy]);
 
@@ -216,7 +253,7 @@ export const PageSet = ({
 
   const formatCategoryName = (): string => {
     if (currentCategory) {
-      return isBn 
+      return isBn
         ? (currentCategory.nameBn || currentCategory.name)
         : (currentCategory.name || currentCategory.nameBn);
     }
@@ -234,7 +271,7 @@ export const PageSet = ({
       colors: [],
       stones: [],
       fragrances: [],
-      priceRange: { min: 0, max: 7000 },
+      priceRange: { min: 0, max: 10000 },
       rating: null,
     });
     setSortBy("default");
@@ -248,9 +285,9 @@ export const PageSet = ({
   };
 
   return (
-    <div className="bg-gray-50 py-8 min-h-screen">
+    <div className="py-8 min-h-screen" style={{ backgroundColor: backgroundColor }}>
       <div className="container mx-auto px-4">
-        <Breadcrumb page={formatCategoryName()} className="py-2" />
+        <Breadcrumb page={formatCategoryName()} className="py-2" settings={settings} />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr] mt-4">
           {/* Sidebar */}
@@ -261,25 +298,49 @@ export const PageSet = ({
               sizes={sizes}
               colors={colors}
               onFilterChange={handleFilterChange}
+              settings={settings}
             />
           </div>
 
           {/* Main Content */}
           <div>
-            {/* Category wise SubCategory */}
-            <div className="bg-white rounded-lg p-4 mb-6 shadow-sm flex flex-col gap-4">
-              <div className="w-full">
-                <SubSubcategories subcategories={subcategories} />
+            {/* Banner */}
+            {categoryData?.bannerImage && (
+              <div className="rounded-lg p-2 mb-6 shadow-sm" style={{ backgroundColor: cardBg }}>
+                <div className="w-full overflow-hidden rounded-lg">
+                  <Image
+                    src={categoryData.bannerImage}
+                    alt={language === 'bn' ? "ক্যাটাগরি ব্যানার" : "Category Banner"}
+                    width={1200}
+                    height={400}
+                    className="w-full h-auto object-contain"
+                    priority={false}
+                    unoptimized={categoryData.bannerImage?.startsWith('/uploads/')}
+                  />
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Category wise SubCategory */}
+            {subcategories && subcategories.length > 0 && (
+              <div className="rounded-lg p-4 mb-6 shadow-sm flex flex-col gap-4" style={{ backgroundColor: cardBg }}>
+                <div className="w-full">
+                  <SubSubcategories 
+                    subcategories={subcategories} 
+                    categorySlug={categoryData?.slug} 
+                    settings={settings} 
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Toolbar */}
-            <div className="bg-white rounded-lg p-4 mb-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="rounded-lg p-4 mb-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4" style={{ backgroundColor: cardBg }}>
               <div>
-                <h1 className="text-xl md:text-2xl font-semibold text-gray-800">
+                <h1 className="text-xl md:text-2xl font-semibold" style={{ color: textColor }}>
                   {formatCategoryName()} {texts.products}
                 </h1>
-                <p className="mt-2 text-sm text-gray-500">
+                <p className="mt-2 text-sm" style={{ color: textMuted }}>
                   {texts.showing} {currentProducts.length} {texts.of}{" "}
                   {sortedProducts.length} {texts.products}
                   {currentCategory && ` ${texts.in} ${formatCategoryName()} ${texts.category}`}
@@ -287,11 +348,14 @@ export const PageSet = ({
               </div>
 
               <div className="flex items-center gap-3">
-                <label className="text-sm text-gray-600">{texts.sortBy}</label>
+                <label className="text-sm" style={{ color: textMuted }}>{texts.sortBy}</label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-sm bg-white"
+                  className="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none text-sm bg-white"
+                  style={{ borderColor: borderColor }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = primaryColor}
+                  onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
                 >
                   {sortOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -310,6 +374,7 @@ export const PageSet = ({
                     <ProductCard
                       key={product.id || product._id}
                       product={product}
+                      settings={settings}
                     />
                   ))}
                 </div>
@@ -320,52 +385,98 @@ export const PageSet = ({
                     <button
                       onClick={() => goToPage(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                        currentPage === 1
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
-                      }`}
+                      className="w-10 h-10 rounded-lg flex items-center justify-center transition-all"
+                      style={{
+                        backgroundColor: currentPage === 1 ? hoverBg : cardBg,
+                        border: currentPage === 1 ? 'none' : `1px solid ${borderColor}`,
+                        color: currentPage === 1 ? textMuted : textColor,
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (currentPage !== 1) {
+                          e.currentTarget.style.backgroundColor = primaryColor;
+                          e.currentTarget.style.color = '#FFFFFF';
+                          e.currentTarget.style.borderColor = primaryColor;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (currentPage !== 1) {
+                          e.currentTarget.style.backgroundColor = cardBg;
+                          e.currentTarget.style.color = textColor;
+                          e.currentTarget.style.borderColor = borderColor;
+                        }
+                      }}
                     >
                       <ChevronLeft size={18} />
                     </button>
 
-                    {Array.from({ length: Math.min(totalPages, 5) }).map(
-                      (_, idx) => {
-                        let pageNum: number;
-                        if (totalPages <= 5) {
-                          pageNum = idx + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = idx + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + idx;
-                        } else {
-                          pageNum = currentPage - 2 + idx;
-                        }
-
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => goToPage(pageNum)}
-                            className={`w-10 h-10 rounded-lg transition-all ${
-                              currentPage === pageNum
-                                ? "bg-red-500 text-white shadow-md"
-                                : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
+                    {Array.from({ length: Math.min(totalPages, 5) }).map((_, idx) => {
+                      let pageNum: number;
+                      if (totalPages <= 5) {
+                        pageNum = idx + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = idx + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + idx;
+                      } else {
+                        pageNum = currentPage - 2 + idx;
                       }
-                    )}
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => goToPage(pageNum)}
+                          className="w-10 h-10 rounded-lg transition-all"
+                          style={{
+                            backgroundColor: currentPage === pageNum ? primaryColor : cardBg,
+                            color: currentPage === pageNum ? '#FFFFFF' : textColor,
+                            border: currentPage === pageNum ? 'none' : `1px solid ${borderColor}`,
+                            boxShadow: currentPage === pageNum ? `0 2px 8px ${primaryColor}40` : 'none'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentPage !== pageNum) {
+                              e.currentTarget.style.backgroundColor = primaryColor;
+                              e.currentTarget.style.color = '#FFFFFF';
+                              e.currentTarget.style.borderColor = primaryColor;
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentPage !== pageNum) {
+                              e.currentTarget.style.backgroundColor = cardBg;
+                              e.currentTarget.style.color = textColor;
+                              e.currentTarget.style.borderColor = borderColor;
+                            }
+                          }}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
 
                     <button
                       onClick={() => goToPage(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                        currentPage === totalPages
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
-                      }`}
+                      className="w-10 h-10 rounded-lg flex items-center justify-center transition-all"
+                      style={{
+                        backgroundColor: currentPage === totalPages ? hoverBg : cardBg,
+                        border: currentPage === totalPages ? 'none' : `1px solid ${borderColor}`,
+                        color: currentPage === totalPages ? textMuted : textColor,
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (currentPage !== totalPages) {
+                          e.currentTarget.style.backgroundColor = primaryColor;
+                          e.currentTarget.style.color = '#FFFFFF';
+                          e.currentTarget.style.borderColor = primaryColor;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (currentPage !== totalPages) {
+                          e.currentTarget.style.backgroundColor = cardBg;
+                          e.currentTarget.style.color = textColor;
+                          e.currentTarget.style.borderColor = borderColor;
+                        }
+                      }}
                     >
                       <ChevronRight size={18} />
                     </button>
@@ -374,12 +485,12 @@ export const PageSet = ({
               </>
             ) : (
               /* Empty State */
-              <div className="bg-white rounded-lg p-12 text-center">
+              <div className="rounded-lg p-12 text-center" style={{ backgroundColor: cardBg }}>
                 <div className="flex flex-col items-center">
                   <svg
-                    className="w-24 h-24 text-gray-400 mb-4"
+                    className="w-24 h-24 mb-4"
                     fill="none"
-                    stroke="currentColor"
+                    stroke={textMuted}
                     viewBox="0 0 24 24"
                   >
                     <path
@@ -389,29 +500,37 @@ export const PageSet = ({
                       d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                     />
                   </svg>
-                  <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                  <h3 className="text-xl font-semibold mb-2" style={{ color: textColor }}>
                     {texts.noProductsFound}
                   </h3>
-                  <p className="text-gray-500 mb-4">
+                  <p className="mb-4" style={{ color: textMuted }}>
                     {getEmptyMessage()}
                   </p>
-                  {(filters.categories.length > 0 || 
-                    filters.brands.length > 0 || 
-                    filters.colors.length > 0 || 
-                    filters.sizes.length > 0 || 
-                    filters.priceRange.min > 0 || 
-                    filters.priceRange.max < 7000 || 
+                  {(filters.categories.length > 0 ||
+                    filters.brands.length > 0 ||
+                    filters.colors.length > 0 ||
+                    filters.sizes.length > 0 ||
+                    filters.priceRange.min > 0 ||
+                    filters.priceRange.max < 10000 ||
                     filters.rating) && (
-                    <button
-                      onClick={clearAllFilters}
-                      className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                    >
-                      {texts.clearAllFilters}
-                    </button>
-                  )}
+                      <button
+                        onClick={clearAllFilters}
+                        className="px-6 py-2 text-white rounded-lg transition-colors"
+                        style={{ backgroundColor: primaryColor }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
+                      >
+                        {texts.clearAllFilters}
+                      </button>
+                    )}
                 </div>
               </div>
             )}
+
+            {/* Category Content */}
+            <div className="rounded-lg p-4 mb-6 shadow-sm mt-16" style={{ backgroundColor: cardBg }}>
+              <CategoryContent category={categoryData} settings={settings} />
+            </div>
           </div>
         </div>
       </div>

@@ -8,9 +8,12 @@ export interface IBrand extends Document {
   icon?: string;
   iconColor?: string;
   iconBgColor?: string;
+  bannerImage?: string;
   image?: string;
   imageBgColor?: string;
   slug: string;
+  description: string;
+  descriptionBn: string;
   active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -54,12 +57,24 @@ const brandSchema = new Schema<IBrand>(
       type: String,
       default: "#F8FAFC",
     },
+    bannerImage: {
+      type: String,
+      default: null,
+    },
     slug: {
       type: String,
       required: true,
       unique: true,
       trim: true,
       lowercase: true,
+    },
+    description: {
+      type: String,
+      default: null,
+    },
+    descriptionBn: {
+      type: String,
+      default: null,
     },
     active: {
       type: Boolean,
@@ -78,5 +93,5 @@ const brandSchema = new Schema<IBrand>(
 brandSchema.index({ name: 1, slug: 1 });
 brandSchema.index({ active: 1 });
 
-export const Brand = (mongoose.models.Brand as Model<IBrand>) || 
+export const Brand = (mongoose.models.Brand as Model<IBrand>) ||
   mongoose.model<IBrand>("Brand", brandSchema);

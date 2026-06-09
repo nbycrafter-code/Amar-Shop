@@ -8,6 +8,14 @@ interface Settings {
   address?: string;
   phone?: string;
   email?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  textColor?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  headingColor?: string;
+  footerBackground?: string;
+  buttonPrimaryHover?: string;
 }
 
 interface FooterProps {
@@ -33,6 +41,17 @@ interface FooterLinks {
 
 export const Footer = ({ settings = {} }: FooterProps) => {
   const { language } = useLanguage();
+
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#d4382c";
+  const textColor = settings?.textColor || "#4B5563";
+  const headingColor = settings?.headingColor || "#1F2937";
+  const footerBg = settings?.footerBackground || settings?.backgroundColor || "#f3f3f3";
+  const topFooterBg = settings?.gray100 || "#ececec";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const inputBorderColor = settings?.borderColor || "#D1D5DB";
+  const hoverBg = settings?.hoverBackground || "#F3F4F6";
 
   const footerLinks: FooterLinks = {
     help: {
@@ -110,13 +129,18 @@ export const Footer = ({ settings = {} }: FooterProps) => {
   const newsletterText = getNewsletterText();
 
   return (
-    <footer className="bg-[#f3f3f3] text-gray-700">
-      <section className="border-y border-gray-200 bg-[#ececec]">
+    <footer style={{ backgroundColor: footerBg, color: textColor }}>
+      {/* Newsletter Section */}
+      <section style={{ 
+        backgroundColor: topFooterBg, 
+        borderTop: `1px solid ${borderColor}`,
+        borderBottom: `1px solid ${borderColor}`
+      }}>
         <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between">
-          <p className="flex items-center gap-2 text-2xl text-[20px] font-semibold">
-            <Mail className="h-5 w-5" /> {newsletterText.title}
+          <p className="flex items-center gap-2 text-2xl text-[20px] font-semibold" style={{ color: headingColor }}>
+            <Mail className="h-5 w-5" style={{ color: primaryColor }} /> {newsletterText.title}
           </p>
-          <p className="text-sm">
+          <p className="text-sm" style={{ color: textColor }}>
             {newsletterText.description}
           </p>
           <form onSubmit={handleNewsletterSubmit} className="flex w-full max-w-[420px] items-center gap-2">
@@ -125,11 +149,24 @@ export const Footer = ({ settings = {} }: FooterProps) => {
               type="email"
               required
               placeholder={newsletterText.placeholder}
-              className="flex-1 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ef553f]"
+              className="flex-1 rounded px-3 py-2 focus:outline-none focus:ring-2"
+              style={{ 
+                border: `1px solid ${inputBorderColor}`,
+                borderRadius: settings?.borderRadius || '0.25rem',
+                color: textColor
+              }}
+              onFocus={(e) => e.currentTarget.style.borderColor = primaryColor}
+              onBlur={(e) => e.currentTarget.style.borderColor = inputBorderColor}
             />
             <button 
               type="submit"
-              className="rounded bg-[#ef553f] px-5 py-2 text-white hover:bg-[#d4382c] transition-colors duration-300"
+              className="rounded px-5 py-2 text-white transition-colors duration-300"
+              style={{ 
+                backgroundColor: primaryColor,
+                borderRadius: settings?.borderRadius || '0.25rem'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
             >
               {newsletterText.button}
             </button>
@@ -137,15 +174,22 @@ export const Footer = ({ settings = {} }: FooterProps) => {
         </div>
       </section>
       
+      {/* Main Footer Links */}
       <section className="container mx-auto grid w-full grid-cols-2 gap-6 px-4 py-10 md:grid-cols-5">
         <div>
-          <h3 className="mb-3 text-lg text-[22px] font-semibold text-[#ef553f]">
+          <h3 className="mb-3 text-lg text-[22px] font-semibold" style={{ color: primaryColor }}>
             {footerLinks.help.title}
           </h3>
           <ul className="space-y-2 text-sm">
             {footerLinks.help.links.map((link) => (
               <li key={link.name}>
-                <Link href={link.path} className="hover:text-[#ef553f] transition-colors duration-300">
+                <Link 
+                  href={link.path} 
+                  className="transition-colors duration-300"
+                  style={{ color: textColor }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                  onMouseLeave={(e) => e.currentTarget.style.color = textColor}
+                >
                   {link.name}
                 </Link>
               </li>
@@ -154,13 +198,19 @@ export const Footer = ({ settings = {} }: FooterProps) => {
         </div>
 
         <div>
-          <h3 className="mb-3 text-lg text-[22px] font-semibold text-[#ef553f]">
+          <h3 className="mb-3 text-lg text-[22px] font-semibold" style={{ color: primaryColor }}>
             {footerLinks.info.title}
           </h3>
           <ul className="space-y-2 text-sm">
             {footerLinks.info.links.map((link) => (
               <li key={link.name}>
-                <Link href={link.path} className="hover:text-[#ef553f] transition-colors duration-300">
+                <Link 
+                  href={link.path} 
+                  className="transition-colors duration-300"
+                  style={{ color: textColor }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                  onMouseLeave={(e) => e.currentTarget.style.color = textColor}
+                >
                   {link.name}
                 </Link>
               </li>
@@ -169,13 +219,19 @@ export const Footer = ({ settings = {} }: FooterProps) => {
         </div>
 
         <div>
-          <h3 className="mb-3 text-lg text-[22px] font-semibold text-[#ef553f]">
+          <h3 className="mb-3 text-lg text-[22px] font-semibold" style={{ color: primaryColor }}>
             {footerLinks.policy.title}
           </h3>
           <ul className="space-y-2 text-sm">
             {footerLinks.policy.links.map((link) => (
               <li key={link.name}>
-                <Link href={link.path} className="hover:text-[#ef553f] transition-colors duration-300">
+                <Link 
+                  href={link.path} 
+                  className="transition-colors duration-300"
+                  style={{ color: textColor }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                  onMouseLeave={(e) => e.currentTarget.style.color = textColor}
+                >
                   {link.name}
                 </Link>
               </li>
@@ -184,13 +240,19 @@ export const Footer = ({ settings = {} }: FooterProps) => {
         </div>
 
         <div>
-          <h3 className="mb-3 text-lg text-[22px] font-semibold text-[#ef553f]">
+          <h3 className="mb-3 text-lg text-[22px] font-semibold" style={{ color: primaryColor }}>
             {footerLinks.product.title}
           </h3>
           <ul className="space-y-2 text-sm">
             {footerLinks.product.links.map((link) => (
               <li key={link.name}>
-                <Link href={link.path} className="hover:text-[#ef553f] transition-colors duration-300">
+                <Link 
+                  href={link.path} 
+                  className="transition-colors duration-300"
+                  style={{ color: textColor }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                  onMouseLeave={(e) => e.currentTarget.style.color = textColor}
+                >
                   {link.name}
                 </Link>
               </li>
@@ -199,23 +261,35 @@ export const Footer = ({ settings = {} }: FooterProps) => {
         </div>
 
         <div>
-          <h3 className="mb-3 text-lg text-[22px] font-semibold text-[#ef553f]">
+          <h3 className="mb-3 text-lg text-[22px] font-semibold" style={{ color: primaryColor }}>
             {language === 'bn' ? 'যোগাযোগের তথ্য' : 'Contact Info'}
           </h3>
           <div className="space-y-2 text-sm">
             <p className="flex items-start gap-2">
-              <MapPin className="mt-1 h-4 w-4 flex-shrink-0" />
-              <span>{settings?.address || (language === 'bn' ? 'ঠিকানা পাওয়া যায়নি' : 'Address not found')}</span>
+              <MapPin className="mt-1 h-4 w-4 flex-shrink-0" style={{ color: primaryColor }} />
+              <span style={{ color: textColor }}>{settings?.address || (language === 'bn' ? 'ঠিকানা পাওয়া যায়নি' : 'Address not found')}</span>
             </p>
             <p className="flex items-center gap-2">
-              <Phone className="h-4 w-4 flex-shrink-0" />
-              <a href={`tel:${settings?.phone}`} className="hover:text-[#ef553f] transition-colors">
+              <Phone className="h-4 w-4 flex-shrink-0" style={{ color: primaryColor }} />
+              <a 
+                href={`tel:${settings?.phone}`} 
+                className="transition-colors duration-300"
+                style={{ color: textColor }}
+                onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                onMouseLeave={(e) => e.currentTarget.style.color = textColor}
+              >
                 {settings?.phone || (language === 'bn' ? 'ফোন পাওয়া যায়নি' : 'Phone not found')}
               </a>
             </p>
             <p className="flex items-center gap-2">
-              <Mail className="h-4 w-4 flex-shrink-0" />
-              <a href={`mailto:${settings?.email}`} className="hover:text-[#ef553f] transition-colors">
+              <Mail className="h-4 w-4 flex-shrink-0" style={{ color: primaryColor }} />
+              <a 
+                href={`mailto:${settings?.email}`} 
+                className="transition-colors duration-300"
+                style={{ color: textColor }}
+                onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                onMouseLeave={(e) => e.currentTarget.style.color = textColor}
+              >
                 {settings?.email || (language === 'bn' ? 'ইমেইল পাওয়া যায়নি' : 'Email not found')}
               </a>
             </p>
@@ -223,8 +297,11 @@ export const Footer = ({ settings = {} }: FooterProps) => {
         </div>
       </section>
       
-      <section className="border-t border-gray-200 py-5 text-center text-sm">
-        © 2026 Amar-Shop - {language === 'bn' ? 'থিম দ্বারা' : 'Theme by'} Dipankar
+      {/* Copyright Section */}
+      <section className="border-t py-5 text-center text-sm" style={{ borderTopColor: borderColor }}>
+        <span style={{ color: textColor }}>
+          © 2026 Amar-Shop - {language === 'bn' ? 'থিম দ্বারা' : 'Theme by'} Dipankar
+        </span>
       </section>
     </footer>
   );

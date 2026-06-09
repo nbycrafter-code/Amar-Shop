@@ -9,7 +9,10 @@ export interface ICategory extends Document {
   iconBgColor?: string;
   image?: string;
   imageBgColor?: string;
+  bannerImage?: string;
   slug: string;
+  description: string;
+  descriptionBn: string;
   active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -52,11 +55,23 @@ const categorySchema = new Schema<ICategory>(
       default: "#F8FAFC",
       trim: true,
     },
+    bannerImage: {
+      type: String,
+      default: null,
+    },
     slug: {
       type: String,
       required: true,
       unique: true,
       trim: true,
+    },
+    description: {
+      type: String,
+      default: null,
+    },
+    descriptionBn: {
+      type: String,
+      default: null,
     },
     active: {
       type: Boolean,
@@ -75,5 +90,5 @@ categorySchema.index({ name: 1, slug: 1 });
 categorySchema.index({ iconColor: 1 });
 categorySchema.index({ iconBgColor: 1 });
 
-export const Category = (mongoose.models.Category as Model<ICategory>) || 
+export const Category = (mongoose.models.Category as Model<ICategory>) ||
   mongoose.model<ICategory>("Category", categorySchema);

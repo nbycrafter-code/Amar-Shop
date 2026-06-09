@@ -20,15 +20,18 @@ interface CategoryData {
   nameBn: string;
   icon?: string;
   iconColor?: string;
-  iconBgColor?: string;  // ✅ NEW - Icon background color
+  iconBgColor?: string;
   image?: string;
-  imageBgColor?: string; // ✅ NEW - Image background color
+  imageBgColor?: string;
+  bannerImage?: string;
   slug: string;
+  description?: string;
+  descriptionBn?: string;
   active?: boolean;
 }
 
 // Helper function to save image
-async function saveImage(file: File): Promise<string> {
+async function saveImage(file: File, type: "category" | "banner" = "category"): Promise<string> {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
   
@@ -36,9 +39,18 @@ async function saveImage(file: File): Promise<string> {
   const timestamp = Date.now();
   const randomString = Math.random().toString(36).substring(2, 8);
   const ext = file.name.split('.').pop() || 'jpg';
-  const filename = `category-${timestamp}-${randomString}.${ext}`;
+  const filename = `${timestamp}-${randomString}.${ext}`;
   
-  const uploadDir = path.join(process.cwd(), "public/uploads/categories/");
+  let uploadDir: string;
+  let urlPath: string;
+  
+  if (type === "banner") {
+    uploadDir = path.join(process.cwd(), "public/uploads/categories/banner");
+    urlPath = `/uploads/categories/banner/${filename}`;
+  } else {
+    uploadDir = path.join(process.cwd(), "public/uploads/categories");
+    urlPath = `/uploads/categories/${filename}`;
+  }
   
   // Ensure directory exists
   if (!fs.existsSync(uploadDir)) {
@@ -48,7 +60,22 @@ async function saveImage(file: File): Promise<string> {
   const filepath = path.join(uploadDir, filename);
   await fs.promises.writeFile(filepath, buffer);
   
-  return `/uploads/categories/${filename}`;
+  return urlPath;
+}
+
+// Helper to delete image
+async function deleteImage(imagePath: string | null | undefined) {
+  if (imagePath && (imagePath.startsWith('/uploads/categories/') || imagePath.startsWith('/uploads/'))) {
+    const fullPath = path.join(process.cwd(), "public", imagePath);
+    if (fs.existsSync(fullPath)) {
+      try {
+        fs.unlinkSync(fullPath);
+        console.log("✅ Deleted image:", imagePath);
+      } catch (deleteError) {
+        console.error("⚠️ Error deleting image:", deleteError);
+      }
+    }
+  }
 }
 
 // ==================== GET: Fetch category(s) ====================
@@ -59,7 +86,6 @@ export async function GET(request: NextRequest) {
     const active = searchParams.get('active');
     
     if (id) {
-      // Get single category by ID using query
       const category = await getCategoryDetails(id);
       if (!category) {
         return NextResponse.json(
@@ -72,11 +98,6 @@ export async function GET(request: NextRequest) {
         data: category,
       });
     } else {
-      // Get all categories with optional active filter
-      let query = {};
-      if (active === 'true') {
-        query = { active: true };
-      }
       const categories = await getCategories();
       return NextResponse.json({
         success: true,
@@ -95,17 +116,19 @@ export async function GET(request: NextRequest) {
 // ==================== POST: Create a new category ====================
 export async function POST(request: NextRequest) {
   try {
-    let name, nameBn, icon, iconColor, iconBgColor, image, imageBgColor;
+    let name, nameBn, description, descriptionBn, icon, iconColor, iconBgColor, image, imageBgColor, bannerImage;
     
     const contentType = request.headers.get("content-type");
     
     if (contentType?.includes("multipart/form-data")) {
-      // Handle image upload
       const formData = await request.formData();
       name = formData.get("name") as string;
       nameBn = formData.get("nameBn") as string;
+      description = formData.get("description") as string;
+      descriptionBn = formData.get("descriptionBn") as string;
       const imageFile = formData.get("image") as File;
-      imageBgColor = formData.get("imageBgColor") as string || "#F8FAFC"; // ✅ Image background color
+      const bannerFile = formData.get("bannerImage") as File;
+      imageBgColor = formData.get("imageBgColor") as string || "#F8FAFC";
       
       // Validation
       if (!name || name.trim() === "") {
@@ -122,30 +145,47 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (!imageFile) {
+      // Check if either image or icon is provided
+      if (!imageFile && !formData.get("icon")) {
         return NextResponse.json(
-          { error: "Category image is required" },
+          { error: "Either category image or icon is required" },
           { status: 400 }
         );
       }
 
-      // Save image
-      const imageUrl = await saveImage(imageFile);
-      icon = "";
-      image = imageUrl;
-      iconColor = "";
-      iconBgColor = "";
+      // Handle image upload
+      if (imageFile && imageFile.size > 0) {
+        const imageUrl = await saveImage(imageFile, "category");
+        image = imageUrl;
+        icon = "";
+        iconColor = "";
+        iconBgColor = "";
+      } else {
+        // Handle icon data
+        icon = formData.get("icon") as string || "ShoppingBag";
+        iconColor = formData.get("iconColor") as string || "#3B82F6";
+        iconBgColor = formData.get("iconBgColor") as string || "#EFF6FF";
+        image = "";
+        imageBgColor = "";
+      }
+      
+      // Save banner image if provided
+      if (bannerFile && bannerFile.size > 0) {
+        bannerImage = await saveImage(bannerFile, "banner");
+      }
       
     } else {
-      // Handle icon upload
       const body = await request.json();
       name = body.name;
       nameBn = body.nameBn;
+      description = body.description || "";
+      descriptionBn = body.descriptionBn || "";
       icon = body.icon;
       iconColor = body.iconColor || "#3B82F6";
-      iconBgColor = body.iconBgColor || "#EFF6FF"; // ✅ Icon background color (default light blue)
-      image = "";
-      imageBgColor = "";
+      iconBgColor = body.iconBgColor || "#EFF6FF";
+      image = body.image || "";
+      imageBgColor = body.imageBgColor || "";
+      bannerImage = body.bannerImage || "";
 
       // Validation
       if (!name || name.trim() === "") {
@@ -162,9 +202,10 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (!icon || icon.trim() === "") {
+      // Check if either image or icon is provided
+      if ((!image || image.trim() === "") && (!icon || icon.trim() === "")) {
         return NextResponse.json(
-          { error: "Category icon is required" },
+          { error: "Either category image or icon is required" },
           { status: 400 }
         );
       }
@@ -200,16 +241,18 @@ export async function POST(request: NextRequest) {
     const categoryData: CategoryData = {
       name: name.trim(),
       nameBn: nameBn.trim(),
-      icon: icon,
-      iconColor: iconColor,
-      iconBgColor: iconBgColor, // ✅ Save icon background color
-      image: image,
-      imageBgColor: imageBgColor, // ✅ Save image background color
+      description: description && description.trim() ? description.trim() : "",
+      descriptionBn: descriptionBn && descriptionBn.trim() ? descriptionBn.trim() : "",
+      icon: icon || "",
+      iconColor: iconColor || "#3B82F6",
+      iconBgColor: iconBgColor || "#EFF6FF",
+      image: image || "",
+      imageBgColor: imageBgColor || "",
+      bannerImage: bannerImage || "",
       slug: slug,
       active: true,
     };
 
-    // Create new category using query
     const newCategory = await createCategoryQuery(categoryData);
     console.log("✅ Category Created:", newCategory);
 
@@ -220,7 +263,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("❌ Error in POST /api/category:", error);
-    // Check for duplicate key error
     if (error instanceof Error && 'code' in error && (error as any).code === 11000) {
       return NextResponse.json(
         { error: "Category with this name already exists" },
@@ -237,23 +279,28 @@ export async function POST(request: NextRequest) {
 // ==================== PUT: Update an existing category ====================
 export async function PUT(request: NextRequest) {
   try {
-    let id, name, nameBn, icon, iconColor, iconBgColor, image, imageBgColor;
+    let id, name, nameBn, description, descriptionBn, icon, iconColor, iconBgColor, image, imageBgColor, bannerImage;
     
-    // Check if the request is multipart/form-data (image upload) or JSON
     const contentType = request.headers.get("content-type") || "";
     
     if (contentType.includes("multipart/form-data")) {
-      // Handle FormData (image upload)
       const formData = await request.formData();
       id = formData.get("id") as string;
       name = formData.get("name") as string;
       nameBn = formData.get("nameBn") as string;
+      description = formData.get("description") as string;
+      descriptionBn = formData.get("descriptionBn") as string;
       const imageFile = formData.get("image") as File | null;
-      imageBgColor = formData.get("imageBgColor") as string || "#F8FAFC"; // ✅ Image background color
+      const bannerFile = formData.get("bannerImage") as File | null;
+      imageBgColor = formData.get("imageBgColor") as string;
+      icon = formData.get("icon") as string;
+      iconColor = formData.get("iconColor") as string;
+      iconBgColor = formData.get("iconBgColor") as string;
       
-      // If image file is uploaded, save it
+      const existingCategory = await getCategoryDetails(id);
+      
+      // Handle category image upload
       if (imageFile && imageFile.size > 0) {
-        // Validate file type
         const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/gif'];
         if (!validTypes.includes(imageFile.type)) {
           return NextResponse.json(
@@ -262,7 +309,6 @@ export async function PUT(request: NextRequest) {
           );
         }
         
-        // Validate file size (max 2MB)
         if (imageFile.size > 2 * 1024 * 1024) {
           return NextResponse.json(
             { error: "File size must be less than 2MB" },
@@ -270,62 +316,67 @@ export async function PUT(request: NextRequest) {
           );
         }
         
-        // First, get the existing category to find old image
-        const existingCategory = await getCategoryDetails(id);
-        
-        // Delete old image if exists
-        if (existingCategory && existingCategory.image && existingCategory.image.startsWith('/assets/')) {
-          const oldImagePath = path.join(process.cwd(), "public", existingCategory.image);
-          if (fs.existsSync(oldImagePath)) {
-            try {
-              fs.unlinkSync(oldImagePath);
-              console.log("✅ Old image deleted:", existingCategory.image);
-            } catch (deleteError) {
-              console.error("⚠️ Error deleting old image:", deleteError);
-              // Continue even if deletion fails
-            }
-          }
-        }
+        // Delete old image
+        await deleteImage(existingCategory?.image);
         
         // Save new image
-        const bytes = await imageFile.arrayBuffer();
-        const buffer = Buffer.from(bytes);
+        image = await saveImage(imageFile, "category");
         
-        // Create unique filename
-        const timestamp = Date.now();
-        const randomString = Math.random().toString(36).substring(2, 8);
-        const ext = imageFile.name.split('.').pop();
-        const filename = `category-${timestamp}-${randomString}.${ext}`;
+        // Clear icon data when image is uploaded
+        icon = "";
+        iconColor = "";
+        iconBgColor = "";
+      } else if (icon && icon.trim()) {
+        // Using icon instead of image
+        image = "";
+        imageBgColor = "";
         
-        // Ensure directory exists
-        const uploadDir = path.join(process.cwd(), "public/uploads/categories");
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
+        // Delete old image if exists
+        await deleteImage(existingCategory?.image);
+      }
+      
+      // Handle banner image upload
+      if (bannerFile && bannerFile.size > 0) {
+        const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/gif'];
+        if (!validTypes.includes(bannerFile.type)) {
+          return NextResponse.json(
+            { error: "Invalid banner file type. Only JPEG, PNG, WEBP, and GIF are allowed" },
+            { status: 400 }
+          );
         }
         
-        // Save file
-        const filePath = path.join(uploadDir, filename);
-        fs.writeFileSync(filePath, buffer);
+        if (bannerFile.size > 5 * 1024 * 1024) {
+          return NextResponse.json(
+            { error: "Banner file size must be less than 5MB" },
+            { status: 400 }
+          );
+        }
         
-        // Set image path (public URL)
-        image = `/uploads/categories/${filename}`;
+        // Delete old banner
+        await deleteImage(existingCategory?.bannerImage);
         
-        console.log("✅ New image saved:", image);
+        // Save new banner
+        bannerImage = await saveImage(bannerFile, "banner");
+      } else if (bannerFile && bannerFile.size === 0) {
+        // If empty file is sent, user wants to delete the banner
+        await deleteImage(existingCategory?.bannerImage);
+        bannerImage = "";
       }
     } else {
-      // Handle JSON data
       const body = await request.json();
       id = body.id;
       name = body.name;
       nameBn = body.nameBn;
+      description = body.description;
+      descriptionBn = body.descriptionBn;
       icon = body.icon;
       iconColor = body.iconColor;
-      iconBgColor = body.iconBgColor; // ✅ Icon background color from request
+      iconBgColor = body.iconBgColor;
       image = body.image;
-      imageBgColor = body.imageBgColor; // ✅ Image background color from request
+      imageBgColor = body.imageBgColor;
+      bannerImage = body.bannerImage;
     }
 
-    // Validate required fields
     if (!id) {
       return NextResponse.json(
         { error: "Category ID is required" },
@@ -333,7 +384,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Check if category exists
     const existingCategory = await getCategoryDetails(id);
     if (!existingCategory) {
       return NextResponse.json(
@@ -353,55 +403,58 @@ export async function PUT(request: NextRequest) {
       updateData.nameBn = nameBn.trim();
     }
     
-    // Handle icon vs image logic
-    if (image && image.trim()) {
-      // If image is provided, clear icon fields and set image
+    // Handle description fields
+    if (description !== undefined) {
+      updateData.description = description && description.trim() ? description.trim() : "";
+    }
+    
+    if (descriptionBn !== undefined) {
+      updateData.descriptionBn = descriptionBn && descriptionBn.trim() ? descriptionBn.trim() : "";
+    }
+    
+    // Handle icon vs image logic - either one is fine, not both required
+    if (image !== undefined && image.trim()) {
+      // Using image
       updateData.image = image.trim();
       updateData.icon = "";
       updateData.iconColor = null;
       updateData.iconBgColor = null;
       if (imageBgColor) {
-        updateData.imageBgColor = imageBgColor; // ✅ Save image background color
+        updateData.imageBgColor = imageBgColor;
       }
-    } else if (icon && icon.trim()) {
-      // If icon is provided, clear image and delete old image file
-      if (existingCategory.image && existingCategory.image.startsWith('/assets/')) {
-        const oldImagePath = path.join(process.cwd(), "public", existingCategory.image);
-        if (fs.existsSync(oldImagePath)) {
-          try {
-            fs.unlinkSync(oldImagePath);
-            console.log("✅ Old image deleted when switching to icon:", existingCategory.image);
-          } catch (deleteError) {
-            console.error("⚠️ Error deleting old image:", deleteError);
-          }
-        }
-      }
-      
+    } else if (icon !== undefined && icon.trim()) {
+      // Using icon
       updateData.icon = icon.trim();
       updateData.image = "";
       updateData.imageBgColor = null;
       
       if (iconColor && iconColor.trim()) {
         updateData.iconColor = iconColor.trim();
+      } else {
+        updateData.iconColor = "#3B82F6";
       }
       
-      // ✅ Save icon background color
       if (iconBgColor && iconBgColor.trim()) {
         updateData.iconBgColor = iconBgColor.trim();
+      } else {
+        updateData.iconBgColor = "#EFF6FF";
       }
     } else {
-      // ✅ Update only background colors without changing icon/image
+      // Update only colors if no image/icon change
       if (iconBgColor !== undefined) {
         updateData.iconBgColor = iconBgColor;
       }
-      if (imageBgColor !== undefined) {
+      if (imageBgColor !== undefined && updateData.image) {
         updateData.imageBgColor = imageBgColor;
       }
     }
     
+    if (bannerImage !== undefined) {
+      updateData.bannerImage = bannerImage;
+    }
+    
     updateData.updated_at = new Date();
 
-    // Update category using query
     const updatedCategory = await updateCategoryQuery(id, updateData);
 
     if (!updatedCategory) {
@@ -446,19 +499,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Get category details to delete associated image
     const category = await getCategoryDetails(id);
     
-    // Delete associated image if exists and is not an icon
-    if (category?.image && category.image.startsWith('/assets/')) {
-      const imagePath = path.join(process.cwd(), "public", category.image);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-        console.log("🗑️ Deleted category image:", category.image);
-      }
-    }
+    // Delete associated images
+    await deleteImage(category?.image);
+    await deleteImage(category?.bannerImage);
 
-    // Delete category using query
     const deleted = await deleteCategoryQuery(id);
     
     if (!deleted) {
@@ -496,7 +542,6 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Toggle category status using query
     const updatedCategory = await toggleCategoryStatusQuery(id, active !== undefined ? active : false);
 
     if (!updatedCategory) {

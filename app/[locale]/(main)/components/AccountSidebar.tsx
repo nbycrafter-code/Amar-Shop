@@ -39,6 +39,7 @@ interface User {
 
 interface AccountSidebarProps {
   user?: User;
+  settings?: any; // settings prop যোগ করা হলো
 }
 
 const menuItems: MenuItem[] = [
@@ -51,11 +52,21 @@ const menuItems: MenuItem[] = [
   { key: "wishlist", labelEn: "Wishlist", labelBn: "উইশলিস্ট", icon: Heart },
 ];
 
-export default function AccountSidebar({ user = {} }: AccountSidebarProps) {
+export default function AccountSidebar({ user = {}, settings = {} }: AccountSidebarProps) {
   const pathname = usePathname();
   const { language } = useLanguage();
   const isBn = language === 'bn';
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const backgroundColor = settings?.cardBackground || "#FFFFFF";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const hoverBg = settings?.hoverBackground || "#F3F4F6";
+  const gradientStart = settings?.gradientStart || "#ef553f";
+  const gradientEnd = settings?.gradientEnd || "#f97316";
 
   const activePage = pathname?.split("/").pop() || "dashboard";
   
@@ -99,9 +110,19 @@ export default function AccountSidebar({ user = {} }: AccountSidebarProps) {
       {/* DESKTOP SIDEBAR */}
       <aside className="hidden md:flex w-60 lg:w-64 flex-shrink-0 flex-col gap-0">
         {/* Avatar card */}
-        <div className="mb-5 flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-4 shadow-sm">
+        <div 
+          className="mb-5 flex items-center gap-3 rounded-xl border px-4 py-4 shadow-sm"
+          style={{ 
+            borderColor: borderColor,
+            backgroundColor: backgroundColor
+          }}
+        >
           {user?.image ? (
-            <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center shadow-md">
+            <div className="relative w-12 h-12 rounded-full overflow-hidden flex items-center justify-center shadow-md"
+              style={{
+                background: `linear-gradient(135deg, ${primaryColor}, ${gradientEnd})`
+              }}
+            >
               <Image
                 src={user.image}
                 alt="Profile"
@@ -111,18 +132,29 @@ export default function AccountSidebar({ user = {} }: AccountSidebarProps) {
               />
             </div>
           ) : (
-            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ef553f] to-[#f97316] text-white font-bold text-lg shadow">
+            <div 
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-white font-bold text-lg shadow"
+              style={{
+                background: `linear-gradient(135deg, ${primaryColor}, ${gradientEnd})`
+              }}
+            >
               {getUserInitial()}
             </div>
           )}
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-gray-800">{getUserName()}</p>
-            <p className="text-xs text-gray-400">{getMyAccountText()}</p>
+            <p className="truncate text-sm font-semibold" style={{ color: textColor }}>{getUserName()}</p>
+            <p className="text-xs" style={{ color: textMuted }}>{getMyAccountText()}</p>
           </div>
         </div>
 
         {/* Nav */}
-        <nav className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+        <nav 
+          className="overflow-hidden rounded-xl border shadow-sm"
+          style={{ 
+            borderColor: borderColor,
+            backgroundColor: backgroundColor
+          }}
+        >
           {menuItemsWithLang.map((item) => {
             const Icon = item.icon;
             const isActive = activePage === item.key;
@@ -130,16 +162,30 @@ export default function AccountSidebar({ user = {} }: AccountSidebarProps) {
               <Link
                 key={item.key}
                 href={`/my-account/${item.key}`}
-                className={`group flex items-center gap-3 border-b border-gray-100 px-4 py-3 text-sm transition-all last:border-b-0 ${
-                  isActive
-                    ? "border-l-4 border-l-[#ef553f] bg-red-50 font-semibold text-[#ef553f]"
-                    : "border-l-4 border-l-transparent text-gray-600 hover:border-l-[#ef553f] hover:bg-gray-50 hover:text-[#ef553f]"
-                }`}
+                className={`group flex items-center gap-3 border-b px-4 py-3 text-sm transition-all last:border-b-0`}
+                style={{
+                  borderBottomColor: borderColor,
+                  borderLeft: isActive ? `4px solid ${primaryColor}` : `4px solid transparent`,
+                  backgroundColor: isActive ? `${primaryColor}10` : 'transparent',
+                  color: isActive ? primaryColor : textMuted,
+                  fontWeight: isActive ? '600' : '400'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = hoverBg;
+                    e.currentTarget.style.color = primaryColor;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = textMuted;
+                  }
+                }}
               >
                 <Icon
-                  className={`h-4 w-4 flex-shrink-0 transition-colors ${
-                    isActive ? "text-[#ef553f]" : "text-gray-400 group-hover:text-[#ef553f]"
-                  }`}
+                  className={`h-4 w-4 flex-shrink-0 transition-colors`}
+                  style={{ color: isActive ? primaryColor : textMuted }}
                 />
                 {item.label}
               </Link>
@@ -149,9 +195,15 @@ export default function AccountSidebar({ user = {} }: AccountSidebarProps) {
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="group flex w-full items-center gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-500 transition-all hover:bg-red-50 hover:text-red-500"
+            className="group flex w-full items-center gap-3 border-t px-4 py-3 text-sm transition-all"
+            style={{ 
+              borderTopColor: borderColor,
+              color: '#EF4444'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEF2F2'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
-            <LogOut className="h-4 w-4 flex-shrink-0 text-gray-400 group-hover:text-red-500 transition-colors" />
+            <LogOut className="h-4 w-4 flex-shrink-0 transition-colors" style={{ color: '#EF4444' }} />
             {getLogoutText()}
           </button>
         </nav>
@@ -162,11 +214,19 @@ export default function AccountSidebar({ user = {} }: AccountSidebarProps) {
         {/* Trigger button */}
         <button
           onClick={() => setMobileOpen((v) => !v)}
-          className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm"
+          className="flex w-full items-center justify-between rounded-xl border px-4 py-3 shadow-sm"
+          style={{ 
+            borderColor: borderColor,
+            backgroundColor: backgroundColor
+          }}
         >
           <div className="flex items-center gap-2.5">
             {user?.image ? (
-              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center shadow-md">
+              <div className="relative w-8 h-8 rounded-full overflow-hidden flex items-center justify-center shadow-md"
+                style={{
+                  background: `linear-gradient(135deg, ${primaryColor}, ${gradientEnd})`
+                }}
+              >
                 <Image
                   src={user.image}
                   alt="Profile"
@@ -176,25 +236,36 @@ export default function AccountSidebar({ user = {} }: AccountSidebarProps) {
                 />
               </div>
             ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#ef553f] text-white font-bold text-sm">
+              <div 
+                className="flex h-8 w-8 items-center justify-center rounded-full text-white font-bold text-sm"
+                style={{
+                  background: `linear-gradient(135deg, ${primaryColor}, ${gradientEnd})`
+                }}
+              >
                 {getUserInitial()}
               </div>
             )}
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-              <ActiveIcon className="h-4 w-4 text-[#ef553f]" />
+            <div className="flex items-center gap-2 text-sm font-medium" style={{ color: textColor }}>
+              <ActiveIcon className="h-4 w-4" style={{ color: primaryColor }} />
               {activeItem.label}
             </div>
           </div>
           {mobileOpen ? (
-            <ChevronUp className="h-4 w-4 text-gray-400" />
+            <ChevronUp className="h-4 w-4" style={{ color: textMuted }} />
           ) : (
-            <ChevronDown className="h-4 w-4 text-gray-400" />
+            <ChevronDown className="h-4 w-4" style={{ color: textMuted }} />
           )}
         </button>
 
         {/* Dropdown menu */}
         {mobileOpen && (
-          <nav className="mt-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+          <nav 
+            className="mt-1 overflow-hidden rounded-xl border shadow-lg"
+            style={{ 
+              borderColor: borderColor,
+              backgroundColor: backgroundColor
+            }}
+          >
             {menuItemsWithLang.map((item) => {
               const Icon = item.icon;
               const isActive = activePage === item.key;
@@ -203,16 +274,28 @@ export default function AccountSidebar({ user = {} }: AccountSidebarProps) {
                   key={item.key}
                   href={`/my-account/${item.key}`}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 border-b border-gray-100 px-4 py-3 text-sm transition-all last:border-b-0 ${
-                    isActive
-                      ? "bg-red-50 font-semibold text-[#ef553f]"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-[#ef553f]"
-                  }`}
+                  className={`flex items-center gap-3 border-b px-4 py-3 text-sm transition-all last:border-b-0`}
+                  style={{
+                    borderBottomColor: borderColor,
+                    backgroundColor: isActive ? `${primaryColor}10` : 'transparent',
+                    color: isActive ? primaryColor : textMuted
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = hoverBg;
+                      e.currentTarget.style.color = primaryColor;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = textMuted;
+                    }
+                  }}
                 >
                   <Icon
-                    className={`h-4 w-4 flex-shrink-0 ${
-                      isActive ? "text-[#ef553f]" : "text-gray-400"
-                    }`}
+                    className={`h-4 w-4 flex-shrink-0`}
+                    style={{ color: isActive ? primaryColor : textMuted }}
                   />
                   {item.label}
                 </Link>
@@ -220,9 +303,15 @@ export default function AccountSidebar({ user = {} }: AccountSidebarProps) {
             })}
             <button
               onClick={() => { setMobileOpen(false); handleLogout(); }}
-              className="flex w-full items-center gap-3 border-t border-gray-100 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors"
+              className="flex w-full items-center gap-3 border-t px-4 py-3 text-sm transition-colors"
+              style={{ 
+                borderTopColor: borderColor,
+                color: '#EF4444'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEF2F2'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              <LogOut className="h-4 w-4 flex-shrink-0" />
+              <LogOut className="h-4 w-4 flex-shrink-0" style={{ color: '#EF4444' }} />
               {getLogoutText()}
             </button>
           </nav>

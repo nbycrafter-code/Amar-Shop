@@ -6,10 +6,26 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useLanguage } from "@/context/LanguageContext";
 
-export const PageSet = () => {
+interface PageSetProps {
+  settings?: any; // settings prop যোগ করা হলো
+}
+
+export const PageSet = ({ settings = {} }: PageSetProps) => {
   const { data: session, update } = useSession();
   const { language } = useLanguage();
   const isBn = language === "bn";
+  
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#d4382c";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const focusBorderColor = primaryColor;
+  const successColor = settings?.successColor || "#10B981";
+  const warningColor = settings?.warningColor || "#F59E0B";
+  const errorColor = settings?.errorColor || "#EF4444";
+  const hoverBg = settings?.hoverBackground || "#F3F4F6";
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -332,8 +348,11 @@ export const PageSet = () => {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-3 text-gray-600">{texts.loading}</p>
+          <div 
+            className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin mx-auto"
+            style={{ borderColor: `${primaryColor}`, borderTopColor: 'transparent' }}
+          />
+          <p className="mt-3" style={{ color: textMuted }}>{texts.loading}</p>
         </div>
       </div>
     );
@@ -343,41 +362,52 @@ export const PageSet = () => {
     <div className="flex-1 order-2 lg:order-1 space-y-6">
       {/* Success Banner */}
       {saved && (
-        <div className="bg-green-50 border border-green-200 rounded-lg px-5 py-4 flex items-center gap-3 animate-in fade-in duration-300">
-          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+        <div 
+          className="rounded-lg px-5 py-4 flex items-center gap-3 animate-in fade-in duration-300"
+          style={{ backgroundColor: `${successColor}10`, border: `1px solid ${successColor}20` }}
+        >
+          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${successColor}20` }}>
+            <svg className="w-4 h-4" fill="none" stroke={successColor} strokeWidth={2.5} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
           <div>
-            <p className="text-green-700 font-semibold text-sm">{texts.changesSaved}</p>
-            <p className="text-green-600 text-xs">{texts.yourDetailsUpdated}</p>
+            <p className="font-semibold text-sm" style={{ color: successColor }}>{texts.changesSaved}</p>
+            <p className="text-xs" style={{ color: successColor }}>{texts.yourDetailsUpdated}</p>
           </div>
         </div>
       )}
 
       {/* Error Banner */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg px-5 py-4 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-            <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+        <div 
+          className="rounded-lg px-5 py-4 flex items-center gap-3"
+          style={{ backgroundColor: `${errorColor}10`, border: `1px solid ${errorColor}20` }}
+        >
+          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${errorColor}20` }}>
+            <svg className="w-4 h-4" fill="none" stroke={errorColor} strokeWidth={2.5} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
           <div>
-            <p className="text-red-700 font-semibold text-sm">{texts.error}</p>
-            <p className="text-red-600 text-xs">{error}</p>
+            <p className="font-semibold text-sm" style={{ color: errorColor }}>{texts.error}</p>
+            <p className="text-xs" style={{ color: errorColor }}>{error}</p>
           </div>
         </div>
       )}
 
       {/* Avatar Card */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="font-bold text-gray-900 mb-4">{texts.profilePicture}</h3>
+      <div 
+        className="rounded-lg border p-6"
+        style={{ backgroundColor: '#FFFFFF', borderColor: borderColor }}
+      >
+        <h3 className="font-bold mb-4" style={{ color: textColor }}>{texts.profilePicture}</h3>
         <div className="flex items-center gap-5">
           <div className="relative">
             {image ? (
-              <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center shadow-md">
+              <div className="relative w-20 h-20 rounded-full overflow-hidden flex items-center justify-center shadow-md"
+                style={{ background: `linear-gradient(135deg, ${primaryColor}, ${settings?.gradientEnd || '#f97316'})` }}
+              >
                 <Image
                   src={image}
                   alt="Profile"
@@ -387,11 +417,17 @@ export const PageSet = () => {
                 />
               </div>
             ) : (
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white text-2xl font-bold shadow-md">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-md"
+                style={{ background: `linear-gradient(135deg, ${primaryColor}, ${settings?.gradientEnd || '#f97316'})` }}
+              >
                 {(formData.displayName || formData.firstName || formData.email || "U").charAt(0).toUpperCase()}
               </div>
             )}
-            <label className="absolute -bottom-1 -right-1 w-7 h-7 bg-gray-800 text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors">
+            <label className="absolute -bottom-1 -right-1 w-7 h-7 text-white rounded-full flex items-center justify-center cursor-pointer transition-colors"
+              style={{ backgroundColor: textMuted }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4B5563'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = textMuted}
+            >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -406,18 +442,21 @@ export const PageSet = () => {
             </label>
           </div>
           <div>
-            <p className="font-semibold text-gray-800">
+            <p className="font-semibold" style={{ color: textColor }}>
               {formData.displayName || formData.firstName || formData.email?.split("@")[0] || "User"}
             </p>
-            <p className="text-sm text-gray-500">{formData.email}</p>
+            <p className="text-sm" style={{ color: textMuted }}>{formData.email}</p>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <p className="text-xs text-gray-400">{texts.clickToChange}</p>
+              <p className="text-xs" style={{ color: textMuted }}>{texts.clickToChange}</p>
               {formData.avatar && (
                 <button
                   type="button"
                   onClick={handleImageUpload}
                   disabled={uploadingImage}
-                  className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 disabled:opacity-50"
+                  className="text-xs text-white px-2 py-1 rounded disabled:opacity-50"
+                  style={{ backgroundColor: primaryColor }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
                 >
                   {uploadingImage ? texts.saving : texts.upload}
                 </button>
@@ -427,7 +466,10 @@ export const PageSet = () => {
                   type="button"
                   onClick={handleImageDelete}
                   disabled={uploadingImage}
-                  className="text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600 disabled:opacity-50"
+                  className="text-xs text-white px-2 py-1 rounded disabled:opacity-50"
+                  style={{ backgroundColor: textMuted }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4B5563'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = textMuted}
                 >
                   {texts.remove}
                 </button>
@@ -438,23 +480,30 @@ export const PageSet = () => {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="flex border-b border-gray-200">
+      <div 
+        className="rounded-lg border overflow-hidden"
+        style={{ backgroundColor: '#FFFFFF', borderColor: borderColor }}
+      >
+        <div className="flex border-b" style={{ borderBottomColor: borderColor }}>
           <button
             onClick={() => setActiveTab("personal")}
-            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${activeTab === "personal"
-              ? "text-red-500 border-b-2 border-red-500 bg-red-50"
-              : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-              }`}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors`}
+            style={{
+              color: activeTab === "personal" ? primaryColor : textMuted,
+              borderBottom: activeTab === "personal" ? `2px solid ${primaryColor}` : '2px solid transparent',
+              backgroundColor: activeTab === "personal" ? `${primaryColor}10` : 'transparent'
+            }}
           >
             {texts.personalInformation}
           </button>
           <button
             onClick={() => setActiveTab("password")}
-            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${activeTab === "password"
-              ? "text-red-500 border-b-2 border-red-500 bg-red-50"
-              : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-              }`}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors`}
+            style={{
+              color: activeTab === "password" ? primaryColor : textMuted,
+              borderBottom: activeTab === "password" ? `2px solid ${primaryColor}` : '2px solid transparent',
+              backgroundColor: activeTab === "password" ? `${primaryColor}10` : 'transparent'
+            }}
           >
             {texts.passwordSecurity}
           </button>
@@ -465,8 +514,8 @@ export const PageSet = () => {
             <div className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    {texts.firstName} <span className="text-red-500">*</span>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: textColor }}>
+                    {texts.firstName} <span style={{ color: errorColor }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -474,14 +523,17 @@ export const PageSet = () => {
                     value={formData.firstName}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm outline-none focus:border-red-400 transition-colors"
+                    className="w-full px-4 py-2.5 border-2 rounded-lg text-sm outline-none transition-colors"
+                    style={{ borderColor: borderColor }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = focusBorderColor}
+                    onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
                     placeholder={isBn ? "নামের প্রথম অংশ লিখুন" : "Enter first name"}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    {texts.lastName} <span className="text-red-500">*</span>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: textColor }}>
+                    {texts.lastName} <span style={{ color: errorColor }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -489,46 +541,53 @@ export const PageSet = () => {
                     value={formData.lastName}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm outline-none focus:border-red-400 transition-colors"
+                    className="w-full px-4 py-2.5 border-2 rounded-lg text-sm outline-none transition-colors"
+                    style={{ borderColor: borderColor }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = focusBorderColor}
+                    onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
                     placeholder={isBn ? "নামের শেষ অংশ লিখুন" : "Enter last name"}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  {texts.displayName} <span className="text-gray-400 text-xs font-normal">{texts.displayNameOptional}</span>
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: textColor }}>
+                  {texts.displayName} <span className="text-xs font-normal" style={{ color: textMuted }}>{texts.displayNameOptional}</span>
                 </label>
                 <input
                   type="text"
                   name="displayName"
                   value={formData.displayName}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm outline-none focus:border-red-400 transition-colors"
+                  className="w-full px-4 py-2.5 border-2 rounded-lg text-sm outline-none transition-colors"
+                  style={{ borderColor: borderColor }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = focusBorderColor}
+                  onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
                   placeholder={isBn ? "ওয়েবসাইটে যেভাবে দেখা যাবে" : "How it will appear on website"}
                 />
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs mt-1" style={{ color: textMuted }}>
                   {texts.displayNameHelp}
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  {texts.emailAddress} <span className="text-red-500">*</span>
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: textColor }}>
+                  {texts.emailAddress} <span style={{ color: errorColor }}>*</span>
                 </label>
                 <input
                   type="email"
                   value={formData.email}
                   disabled
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                  className="w-full px-4 py-2.5 border-2 rounded-lg text-sm cursor-not-allowed"
+                  style={{ borderColor: borderColor, backgroundColor: hoverBg, color: textMuted }}
                 />
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs mt-1" style={{ color: textMuted }}>
                   {texts.emailNotChangeable}
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: textColor }}>
                   {texts.phoneNumber}
                 </label>
                 <input
@@ -536,37 +595,49 @@ export const PageSet = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm outline-none focus:border-red-400 transition-colors"
+                  className="w-full px-4 py-2.5 border-2 rounded-lg text-sm outline-none transition-colors"
+                  style={{ borderColor: borderColor }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = focusBorderColor}
+                  onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
                   placeholder={isBn ? "ফোন নম্বর লিখুন" : "Enter phone number"}
                 />
               </div>
             </div>
           ) : (
             <div className="space-y-5">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
-                <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <div 
+                className="border rounded-lg p-4 flex items-start gap-3"
+                style={{ backgroundColor: `${warningColor}10`, borderColor: `${warningColor}20` }}
+              >
+                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke={warningColor} strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-sm text-yellow-700">
+                <p className="text-sm" style={{ color: warningColor }}>
                   {texts.leaveBlank}
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">{texts.currentPassword}</label>
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: textColor }}>{texts.currentPassword}</label>
                 <div className="relative">
                   <input
                     type={showCurrentPass ? "text" : "password"}
                     name="currentPassword"
                     value={formData.currentPassword}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 pr-10 border-2 border-gray-200 rounded-lg text-sm outline-none focus:border-red-400 transition-colors"
+                    className="w-full px-4 py-2.5 pr-10 border-2 rounded-lg text-sm outline-none transition-colors"
+                    style={{ borderColor: borderColor }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = focusBorderColor}
+                    onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
                     placeholder={isBn ? "বর্তমান পাসওয়ার্ড লিখুন" : "Enter current password"}
                   />
                   <button
                     type="button"
                     onClick={() => setShowCurrentPass(!showCurrentPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                    style={{ color: textMuted }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = textColor}
+                    onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
                   >
                     {showCurrentPass ? (
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -583,20 +654,26 @@ export const PageSet = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">{texts.newPassword}</label>
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: textColor }}>{texts.newPassword}</label>
                 <div className="relative">
                   <input
                     type={showNewPass ? "text" : "password"}
                     name="newPassword"
                     value={formData.newPassword}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 pr-10 border-2 border-gray-200 rounded-lg text-sm outline-none focus:border-red-400 transition-colors"
+                    className="w-full px-4 py-2.5 pr-10 border-2 rounded-lg text-sm outline-none transition-colors"
+                    style={{ borderColor: borderColor }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = focusBorderColor}
+                    onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
                     placeholder={isBn ? "নতুন পাসওয়ার্ড লিখুন" : "Enter new password"}
                   />
                   <button
                     type="button"
                     onClick={() => setShowNewPass(!showNewPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                    style={{ color: textMuted }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = textColor}
+                    onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
                   >
                     {showNewPass ? (
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -616,18 +693,20 @@ export const PageSet = () => {
                       {[1, 2, 3, 4].map((i) => (
                         <div
                           key={i}
-                          className={`h-1 flex-1 rounded-full ${formData.newPassword.length >= i * 2
-                            ? formData.newPassword.length >= 8
-                              ? "bg-green-500"
-                              : formData.newPassword.length >= 6
-                                ? "bg-yellow-500"
-                                : "bg-red-400"
-                            : "bg-gray-200"
-                            }`}
+                          className={`h-1 flex-1 rounded-full`}
+                          style={{
+                            backgroundColor: formData.newPassword.length >= i * 2
+                              ? formData.newPassword.length >= 8
+                                ? successColor
+                                : formData.newPassword.length >= 6
+                                  ? warningColor
+                                  : errorColor
+                              : borderColor
+                          }}
                         ></div>
                       ))}
                     </div>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs" style={{ color: textMuted }}>
                       {formData.newPassword.length < 6
                         ? texts.weak
                         : formData.newPassword.length < 8
@@ -640,25 +719,33 @@ export const PageSet = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">{texts.confirmPassword}</label>
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: textColor }}>{texts.confirmPassword}</label>
                 <div className="relative">
                   <input
                     type={showConfirmPass ? "text" : "password"}
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2.5 pr-10 border-2 rounded-lg text-sm outline-none transition-colors ${formData.confirmPassword && formData.newPassword !== formData.confirmPassword
-                      ? "border-red-400 bg-red-50"
-                      : formData.confirmPassword && formData.newPassword === formData.confirmPassword
-                        ? "border-green-400"
-                        : "border-gray-200 focus:border-red-400"
-                      }`}
+                    className="w-full px-4 py-2.5 pr-10 border-2 rounded-lg text-sm outline-none transition-colors"
+                    style={{
+                      borderColor: formData.confirmPassword && formData.newPassword !== formData.confirmPassword
+                        ? errorColor
+                        : formData.confirmPassword && formData.newPassword === formData.confirmPassword
+                          ? successColor
+                          : borderColor,
+                      backgroundColor: formData.confirmPassword && formData.newPassword !== formData.confirmPassword
+                        ? `${errorColor}10`
+                        : 'transparent'
+                    }}
                     placeholder={isBn ? "নতুন পাসওয়ার্ড নিশ্চিত করুন" : "Confirm new password"}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPass(!showConfirmPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                    style={{ color: textMuted }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = textColor}
+                    onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
                   >
                     {showConfirmPass ? (
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -673,27 +760,39 @@ export const PageSet = () => {
                   </button>
                 </div>
                 {formData.confirmPassword && formData.newPassword !== formData.confirmPassword && (
-                  <p className="text-xs text-red-500 mt-1">{texts.passwordNotMatch}</p>
+                  <p className="text-xs mt-1" style={{ color: errorColor }}>{texts.passwordNotMatch}</p>
                 )}
                 {formData.confirmPassword && formData.newPassword === formData.confirmPassword && (
-                  <p className="text-xs text-green-500 mt-1">✓ {texts.passwordMatch}</p>
+                  <p className="text-xs mt-1" style={{ color: successColor }}>✓ {texts.passwordMatch}</p>
                 )}
               </div>
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3 mt-6 pt-5 border-t border-gray-200">
+          <div className="flex items-center gap-3 mt-6 pt-5 border-t" style={{ borderTopColor: borderColor }}>
             <button
               type="submit"
               disabled={submitting}
-              className="px-6 py-2.5 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 text-white text-sm font-semibold rounded-lg transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: primaryColor }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
             >
               {submitting ? texts.saving : texts.saveChanges}
             </button>
             <Link
               href="/dashboard"
-              className="px-6 py-2.5 border-2 border-gray-300 text-gray-600 text-sm font-medium rounded-lg hover:border-gray-400 transition-colors"
+              className="px-6 py-2.5 border-2 text-sm font-medium rounded-lg transition-colors"
+              style={{ borderColor: borderColor, color: textMuted }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = textColor;
+                e.currentTarget.style.color = textColor;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = borderColor;
+                e.currentTarget.style.color = textMuted;
+              }}
             >
               {texts.cancel}
             </Link>

@@ -48,10 +48,10 @@ export const PageSet: React.FC<CategoriesViewProps> = ({
     }
   };
 
-  useEffect(() => {
-    fetchCategories();
-    fetchSubCategories();
-  }, [refreshKey]);
+  // useEffect(() => {
+  //   fetchCategories();
+  //   fetchSubCategories();
+  // }, [refreshKey]);
 
   const handleSubCategorySuccess = () => {
     setRefreshKey(prev => prev + 1);
@@ -85,6 +85,7 @@ export const PageSet: React.FC<CategoriesViewProps> = ({
     setRefreshKey(prev => prev + 1);
     setEditingSubCategory(null);
   };
+  
 
   return (
     <div className="space-y-6">

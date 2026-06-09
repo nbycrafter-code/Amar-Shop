@@ -349,15 +349,128 @@ export async function getProductsByCategory(
 }
 
 // Get products by brand ID
-export async function getProductsByBrand(brandId: string): Promise<ProductResponse[]> {
+// export async function getProductsByBrand(brandId: string): Promise<ProductResponse[]> {
+//   try {
+//     const products = await Product.find({
+//       brandId: new mongoose.Types.ObjectId(brandId),
+//       active: true
+//     }).lean();
+//     const populatedProducts = await Promise.all(products.map(p => populateProduct(p)));
+//     return populatedProducts.filter(p => p !== null) as ProductResponse[];
+//   } catch (error) {
+//     throw new Error(error instanceof Error ? error.message : "Failed to get products by brand");
+//   }
+// }
+export async function getProductsByBrandSlug(
+  brandSlug: string,
+  limit: number = 50
+): Promise<ProductResponse[]> {
+  try {
+    const brand = await Brand.findOne({ slug: brandSlug }).lean();
+
+    if (!brand) {
+      return [];
+    }
+
+    const products = await Product.find({
+      active: true,
+      brandId: brand._id
+    })
+      .sort({ created_at: -1 })
+      .limit(limit)
+      .lean();
+
+    const populatedProducts = await Promise.all(products.map(p => populateProduct(p)));
+    return populatedProducts.filter(p => p !== null) as ProductResponse[];
+  } catch (error) {
+    console.error("Get products by brand error:", error);
+    throw new Error(error instanceof Error ? error.message : "Failed to get products by brand");
+  }
+}
+
+export async function getProductsByBrandId(
+  brandId: string,
+  limit: number = 50
+): Promise<ProductResponse[]> {
   try {
     const products = await Product.find({
       brandId: new mongoose.Types.ObjectId(brandId),
       active: true
-    }).lean();
+    })
+      .sort({ created_at: -1 })
+      .limit(limit)
+      .lean();
+
     const populatedProducts = await Promise.all(products.map(p => populateProduct(p)));
     return populatedProducts.filter(p => p !== null) as ProductResponse[];
   } catch (error) {
+    throw new Error(error instanceof Error ? error.message : "Failed to get products by brand");
+  }
+}
+
+// আলাদা করে limit ছাড়া সব পণ্য পাওয়ার জন্য
+export async function getAllProductsByBrandSlug(brandSlug: string): Promise<ProductResponse[]> {
+  try {
+    const brand = await Brand.findOne({ slug: brandSlug }).lean();
+
+    if (!brand) {
+      return [];
+    }
+
+    const products = await Product.find({
+      active: true,
+      brandId: brand._id
+    })
+      .sort({ created_at: -1 })
+      .lean();
+
+    const populatedProducts = await Promise.all(products.map(p => populateProduct(p)));
+    return populatedProducts.filter(p => p !== null) as ProductResponse[];
+  } catch (error) {
+    console.error("Get all products by brand error:", error);
+    throw new Error(error instanceof Error ? error.message : "Failed to get products by brand");
+  }
+}
+
+// পেজিনেশন সহ পণ্য পাওয়ার জন্য
+export async function getProductsByBrandSlugPaginated(
+  brandSlug: string,
+  page: number = 1,
+  limit: number = 12
+): Promise<{ products: ProductResponse[]; total: number; totalPages: number }> {
+  try {
+    const brand = await Brand.findOne({ slug: brandSlug }).lean();
+
+    if (!brand) {
+      return { products: [], total: 0, totalPages: 0 };
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      Product.find({
+        active: true,
+        brandId: brand._id
+      })
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Product.countDocuments({
+        active: true,
+        brandId: brand._id
+      })
+    ]);
+
+    const populatedProducts = await Promise.all(products.map(p => populateProduct(p)));
+    
+    return {
+      products: populatedProducts.filter(p => p !== null) as ProductResponse[],
+      total,
+      totalPages: Math.ceil(total / limit)
+    };
+  } catch (error) {
+    console.error("Get paginated products by brand error:", error);
     throw new Error(error instanceof Error ? error.message : "Failed to get products by brand");
   }
 }

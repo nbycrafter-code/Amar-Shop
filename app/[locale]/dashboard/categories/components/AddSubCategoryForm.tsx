@@ -3,7 +3,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useLanguage } from '@/context/LanguageContext';
 import { toast } from "sonner";
 import AllIcon from "@/components/AllIcon";
-import { CheckCircle2, Palette, Plus, Folder, Trash2, Upload, Image, Circle, X, Edit2 } from "lucide-react";
+import { CheckCircle2, Palette, Plus, Folder, Trash2, Upload, Image, Circle, X, Edit2, Image as BannerIcon, FileText } from "lucide-react";
+import TipTapEditor from "@/components/TipTapEditor";
 
 interface Category {
   _id: string;
@@ -22,6 +23,9 @@ interface SubCategory {
   iconBgColor?: string;
   image?: string;
   imageBgColor?: string;
+  bannerImage?: string;
+  description?: string;
+  descriptionBn?: string;
   slug?: string;
   active?: boolean;
 }
@@ -78,18 +82,24 @@ const AddSubCategoryForm: React.FC<AddSubCategoryFormProps> = ({
   onCancelEdit,
   onUpdateSuccess,
 }) => {
-  const { language } = useLanguage(); // ✅ যোগ করুন
+  const { language } = useLanguage();
   const isEditMode = !!editingSubCategory;
   
   const [name, setName] = useState("");
   const [nameBn, setNameBn] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [description, setDescription] = useState("");
+  const [descriptionBn, setDescriptionBn] = useState("");
+  const [showDescription, setShowDescription] = useState(false);
   const [selectedIcon, setSelectedIcon] = useState("Folder");
   const [iconColor, setIconColor] = useState("#3B82F6");
   const [iconBgColor, setIconBgColor] = useState("#EFF6FF");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
   const [imageBgColor, setImageBgColor] = useState("#F8FAFC");
+  // Banner states
+  const [selectedBanner, setSelectedBanner] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState("");
   const [uploadMethod, setUploadMethod] = useState<"icon" | "image">("icon");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -100,6 +110,7 @@ const AddSubCategoryForm: React.FC<AddSubCategoryFormProps> = ({
   const [showImageBgPicker, setShowImageBgPicker] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   // Load editing subcategory data
   useEffect(() => {
@@ -107,6 +118,13 @@ const AddSubCategoryForm: React.FC<AddSubCategoryFormProps> = ({
       setName(editingSubCategory.name);
       setNameBn(editingSubCategory.nameBn);
       setSelectedCategoryId(editingSubCategory.categoryId);
+      setDescription(editingSubCategory.description || "");
+      setDescriptionBn(editingSubCategory.descriptionBn || "");
+      
+      // Show description checkbox if there is existing description
+      if (editingSubCategory.description || editingSubCategory.descriptionBn) {
+        setShowDescription(true);
+      }
       
       if (editingSubCategory.image && editingSubCategory.image.startsWith("/assets/")) {
         setUploadMethod("image");
@@ -117,6 +135,11 @@ const AddSubCategoryForm: React.FC<AddSubCategoryFormProps> = ({
         setSelectedIcon(editingSubCategory.icon || "Folder");
         setIconColor(editingSubCategory.iconColor || "#3B82F6");
         setIconBgColor(editingSubCategory.iconBgColor || "#EFF6FF");
+      }
+      
+      // Load banner if exists
+      if (editingSubCategory.bannerImage) {
+        setBannerPreview(editingSubCategory.bannerImage);
       }
     }
   }, [editingSubCategory]);
@@ -151,22 +174,49 @@ const AddSubCategoryForm: React.FC<AddSubCategoryFormProps> = ({
     }
   };
 
+  const handleBannerSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        toast.error(language === 'bn' ? "শুধু ইমেজ ফাইল সাপোর্টেড" : "Only image files are supported");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(language === 'bn' ? "ব্যানার ইমেজ সাইজ 5MB এর কম হতে হবে" : "Banner image size must be less than 5MB");
+        return;
+      }
+      setSelectedBanner(file);
+      setBannerPreview(URL.createObjectURL(file));
+    }
+  };
+
   const removeImage = () => {
     setSelectedImage(null);
     setImagePreview("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const removeBanner = () => {
+    setSelectedBanner(null);
+    setBannerPreview("");
+    if (bannerInputRef.current) bannerInputRef.current.value = "";
+  };
+
   const resetForm = () => {
     setName("");
     setNameBn("");
     setSelectedCategoryId("");
+    setDescription("");
+    setDescriptionBn("");
+    setShowDescription(false);
     setSelectedIcon("Folder");
     setIconColor("#3B82F6");
     setIconBgColor("#EFF6FF");
     setSelectedImage(null);
     setImagePreview("");
     setImageBgColor("#F8FAFC");
+    setSelectedBanner(null);
+    setBannerPreview("");
     setUploadMethod("icon");
     setError("");
   };
@@ -201,67 +251,68 @@ const AddSubCategoryForm: React.FC<AddSubCategoryFormProps> = ({
       let response;
       
       if (isEditMode && editingSubCategory) {
-        // UPDATE MODE
         const id = editingSubCategory._id;
+        const formData = new FormData();
+        formData.append("id", id);
+        formData.append("name", name.trim());
+        formData.append("nameBn", nameBn.trim());
+        formData.append("categoryId", selectedCategoryId);
         
-        if (uploadMethod === "image" && (selectedImage || imagePreview)) {
-          const formData = new FormData();
-          formData.append("id", id);
-          formData.append("name", name.trim());
-          formData.append("nameBn", nameBn.trim());
-          formData.append("categoryId", selectedCategoryId);
-          if (selectedImage) {
-            formData.append("image", selectedImage);
-          }
-          formData.append("imageBgColor", imageBgColor);
-          
-          response = await fetch("/api/subcategory", {
-            method: "PUT",
-            body: formData,
-          });
+        // Only append description if checkbox is checked
+        if (showDescription) {
+          formData.append("description", description.trim());
+          formData.append("descriptionBn", descriptionBn.trim());
         } else {
-          response = await fetch("/api/subcategory", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id,
-              name: name.trim(),
-              nameBn: nameBn.trim(),
-              categoryId: selectedCategoryId,
-              icon: selectedIcon,
-              iconColor: iconColor,
-              iconBgColor: iconBgColor,
-            }),
-          });
+          formData.append("description", "");
+          formData.append("descriptionBn", "");
         }
-      } else {
-        // CREATE MODE
+        
         if (uploadMethod === "image" && selectedImage) {
-          const formData = new FormData();
-          formData.append("name", name.trim());
-          formData.append("nameBn", nameBn.trim());
-          formData.append("categoryId", selectedCategoryId);
           formData.append("image", selectedImage);
           formData.append("imageBgColor", imageBgColor);
-          
-          response = await fetch("/api/subcategory", {
-            method: "POST",
-            body: formData,
-          });
-        } else {
-          response = await fetch("/api/subcategory", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: name.trim(),
-              nameBn: nameBn.trim(),
-              categoryId: selectedCategoryId,
-              icon: selectedIcon,
-              iconColor: iconColor,
-              iconBgColor: iconBgColor,
-            }),
-          });
+        } else if (uploadMethod === "icon") {
+          formData.append("icon", selectedIcon);
+          formData.append("iconColor", iconColor);
+          formData.append("iconBgColor", iconBgColor);
         }
+        
+        if (selectedBanner) {
+          formData.append("bannerImage", selectedBanner);
+        }
+        
+        response = await fetch("/api/subcategory", {
+          method: "PUT",
+          body: formData,
+        });
+      } else {
+        const formData = new FormData();
+        formData.append("name", name.trim());
+        formData.append("nameBn", nameBn.trim());
+        formData.append("categoryId", selectedCategoryId);
+        
+        // Only append description if checkbox is checked
+        if (showDescription) {
+          formData.append("description", description.trim());
+          formData.append("descriptionBn", descriptionBn.trim());
+        }
+        
+        if (uploadMethod === "image" && selectedImage) {
+          formData.append("image", selectedImage);
+          formData.append("imageBgColor", imageBgColor);
+        } else if (uploadMethod === "icon") {
+          formData.append("icon", selectedIcon);
+          formData.append("iconColor", iconColor);
+          formData.append("iconBgColor", iconBgColor);
+        }
+        
+        if (selectedBanner) {
+          formData.append("bannerImage", selectedBanner);
+        }
+        
+        response = await fetch("/api/subcategory", {
+          method: "POST",
+          body: formData,
+        });
       }
 
       const data = await response.json();
@@ -393,6 +444,61 @@ const AddSubCategoryForm: React.FC<AddSubCategoryFormProps> = ({
           />
         </div>
 
+        {/* Description with Checkbox */}
+        <div className="space-y-4 border-t border-slate-100 pt-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showDescription}
+              onChange={(e) => {
+                setShowDescription(e.target.checked);
+                if (!e.target.checked) {
+                  setDescription("");
+                  setDescriptionBn("");
+                }
+              }}
+              className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+              disabled={isLoading}
+            />
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-slate-500" />
+              <span className="text-xs font-semibold text-slate-600">
+                {language === 'bn' ? "বিবরণ যোগ করুন (ঐচ্ছিক)" : "Add Description (Optional)"}
+              </span>
+            </div>
+          </label>
+
+          {showDescription && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">
+                  {language === 'bn' ? "বিবরণ (ইংরেজি)" : "Description (English)"}
+                </label>
+                <TipTapEditor
+                  value={description}
+                  onChange={setDescription}
+                  placeholder={language === 'bn' ? "বিবরণ লিখুন..." : "Write a description..."}
+                  disabled={isLoading}
+                  minHeight="100px"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">
+                  {language === 'bn' ? "বিবরণ (বাংলা)" : "Description (Bangla)"}
+                </label>
+                <TipTapEditor
+                  value={descriptionBn}
+                  onChange={setDescriptionBn}
+                  placeholder={language === 'bn' ? "বাংলায় বিবরণ লিখুন..." : "Write description in Bangla..."}
+                  disabled={isLoading}
+                  minHeight="100px"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Upload Method */}
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1.5">
@@ -467,6 +573,12 @@ const AddSubCategoryForm: React.FC<AddSubCategoryFormProps> = ({
                 <div>
                   <p className="text-sm font-medium text-slate-800">{name || "Subcategory Name"}</p>
                   <p className="text-xs text-slate-500">{nameBn || "সাব-ক্যাটাগরির নাম"}</p>
+                  {showDescription && description && (
+                    <div 
+                      className="text-xs text-slate-400 mt-1 line-clamp-1"
+                      dangerouslySetInnerHTML={{ __html: description.substring(0, 50) + (description.length > 50 ? '...' : '') }}
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -515,10 +627,41 @@ const AddSubCategoryForm: React.FC<AddSubCategoryFormProps> = ({
                 <div className="flex items-center justify-center p-4 rounded-xl" style={{ backgroundColor: imageBgColor }}>
                   <img src={imagePreview} alt="Preview" className="max-h-32 rounded-lg object-contain" />
                 </div>
+                {showDescription && description && (
+                  <div 
+                    className="text-xs text-slate-500 text-center mt-2 line-clamp-2"
+                    dangerouslySetInnerHTML={{ __html: description }}
+                  />
+                )}
               </div>
             )}
           </>
         )}
+
+        {/* Banner Image Upload Section */}
+        <div className="border-t border-slate-100 pt-4">
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5 flex items-center gap-2">
+            <BannerIcon className="w-3.5 h-3.5 text-purple-600" />
+            {language === 'bn' ? "ব্যানার ইমেজ (ঐচ্ছিক)" : "Banner Image (Optional)"}
+          </label>
+          <div className="border-2 border-dashed border-purple-200 rounded-lg p-4 text-center hover:border-purple-400 transition-colors bg-purple-50/30">
+            {!bannerPreview ? (
+              <div onClick={() => bannerInputRef.current?.click()} className="cursor-pointer">
+                <BannerIcon className="w-10 h-10 text-purple-400 mx-auto mb-2" />
+                <p className="text-sm text-purple-600">{language === 'bn' ? "ব্যানার ইমেজ সিলেক্ট করতে ক্লিক করুন" : "Click to select banner image"}</p>
+                <p className="text-xs text-slate-400 mt-1">PNG, JPG, GIF (Max 5MB) - ব্যানারের জন্য প্রস্তাবিত সাইজ: 1200x400px</p>
+              </div>
+            ) : (
+              <div className="relative">
+                <img src={bannerPreview} alt="Banner Preview" className="w-full max-h-32 object-cover rounded-lg" />
+                <button type="button" onClick={removeBanner} className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            <input ref={bannerInputRef} type="file" accept="image/*" onChange={handleBannerSelect} className="hidden" />
+          </div>
+        </div>
 
         {error && <p className="text-xs text-rose-500 bg-rose-50 px-3 py-2 rounded-lg">{error}</p>}
         {success && (

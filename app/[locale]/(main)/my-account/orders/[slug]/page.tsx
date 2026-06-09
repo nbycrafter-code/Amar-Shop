@@ -2,13 +2,16 @@ import { getOrderByOrderId } from "@/queries/orders";
 import OrderDetailPageSet from "./PageSet";
 import Link from "next/link";
 import { auth } from "@/auth";
+import { getSetting } from "@/queries/settings";
 
 const OrderDetailPage = async ({ params }: { params: Promise<{ orderId: string }> | { orderId: string } }) => {
   try {
     const resolvedParams = await params;
     const orderId = resolvedParams.orderId || resolvedParams.slug;
+
+    const settings = await getSetting();
     
-    console.log("Fetching order with ID:", orderId);
+    // console.log("Fetching order with ID:", orderId);
     
     const session = await auth();
     
@@ -71,7 +74,7 @@ const OrderDetailPage = async ({ params }: { params: Promise<{ orderId: string }
       );
     }
     
-    return <OrderDetailPageSet order={order} />;
+    return <OrderDetailPageSet settings={settings} order={order} />;
     
   } catch (error) {
     console.error("Error in OrderDetailPage:", error);

@@ -1,6 +1,7 @@
 // app/api/brand/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { Brand } from "@/models/brand-model";
+import { Product } from "@/models/product-model";
 import { getSlug } from "@/lib/convertData";
 import { 
   createBrandQuery, 
@@ -48,6 +49,20 @@ async function deleteImage(imageUrl: string): Promise<void> {
   }
 }
 
+// Helper to get item count for brands
+async function getBrandsWithItemCount(brands: any[]) {
+  const brandsWithCount = await Promise.all(
+    brands.map(async (brand) => {
+      const itemCount = await Product.countDocuments({ brandId: brand._id });
+      return {
+        ...brand,
+        itemCount,
+      };
+    })
+  );
+  return brandsWithCount;
+}
+
 // ==================== GET: Fetch brand(s) ====================
 export async function GET(request: NextRequest) {
   try {
@@ -59,10 +74,16 @@ export async function GET(request: NextRequest) {
       if (!brand) {
         return NextResponse.json({ error: "Brand not found" }, { status: 404 });
       }
-      return NextResponse.json({ success: true, data: brand });
+      // Get item count for single brand
+      const itemCount = await Product.countDocuments({ brandId: brand._id });
+      return NextResponse.json({ 
+        success: true, 
+        data: { ...brand, itemCount } 
+      });
     } else {
       const brands = await getBrands();
-      return NextResponse.json({ success: true, data: brands });
+      const brandsWithCount = await getBrandsWithItemCount(brands);
+      return NextResponse.json({ success: true, data: brandsWithCount });
     }
   } catch (error) {
     console.error("❌ Error in GET /api/brand:", error);
@@ -76,8 +97,9 @@ export async function GET(request: NextRequest) {
 // ==================== POST: Create a new brand ====================
 export async function POST(request: NextRequest) {
   try {
-    let name, nameBn, country, icon, iconColor, iconBgColor, imageBgColor;
+    let name, nameBn, country, description, descriptionBn, icon, iconColor, iconBgColor, imageBgColor;
     let imageFile: File | null = null;
+    let bannerFile: File | null = null;
     
     const contentType = request.headers.get("content-type") || "";
     
@@ -86,16 +108,21 @@ export async function POST(request: NextRequest) {
       name = formData.get("name") as string;
       nameBn = formData.get("nameBn") as string;
       country = formData.get("country") as string;
+      description = formData.get("description") as string;
+      descriptionBn = formData.get("descriptionBn") as string;
       icon = formData.get("icon") as string;
       iconColor = formData.get("iconColor") as string;
       iconBgColor = formData.get("iconBgColor") as string;
       imageBgColor = formData.get("imageBgColor") as string;
       imageFile = formData.get("image") as File;
+      bannerFile = formData.get("bannerImage") as File;
     } else {
       const body = await request.json();
       name = body.name;
       nameBn = body.nameBn;
       country = body.country;
+      description = body.description;
+      descriptionBn = body.descriptionBn;
       icon = body.icon;
       iconColor = body.iconColor;
       iconBgColor = body.iconBgColor;
@@ -137,14 +164,23 @@ export async function POST(request: NextRequest) {
       imageUrl = await saveImage(imageFile, "brands", "brand");
     }
 
+    // Handle banner upload
+    let bannerUrl = "";
+    if (bannerFile && bannerFile.size > 0) {
+      bannerUrl = await saveImage(bannerFile, "banners", "brand-banner");
+    }
+
     const brandData = {
       name: name.trim(),
       nameBn: nameBn.trim(),
       country: country.trim(),
+      description: description?.trim() || "",
+      descriptionBn: descriptionBn?.trim() || "",
       icon: icon || "Building2",
       iconColor: iconColor || "#3B82F6",
       iconBgColor: iconBgColor || "#EFF6FF",
       image: imageUrl,
+      bannerImage: bannerUrl,
       imageBgColor: imageBgColor || "#F8FAFC",
       slug,
       active: true,
@@ -173,8 +209,11 @@ export async function POST(request: NextRequest) {
 // ==================== PUT: Update an existing brand ====================
 export async function PUT(request: NextRequest) {
   try {
-    let id, name, nameBn, country, icon, iconColor, iconBgColor, imageBgColor;
+    let id, name, nameBn, country, description, descriptionBn, icon, iconColor, iconBgColor, imageBgColor;
     let imageFile: File | null = null;
+    let bannerFile: File | null = null;
+    let deleteBanner = false;
+    let existingBanner = "";
     
     const contentType = request.headers.get("content-type") || "";
     
@@ -184,17 +223,24 @@ export async function PUT(request: NextRequest) {
       name = formData.get("name") as string;
       nameBn = formData.get("nameBn") as string;
       country = formData.get("country") as string;
+      description = formData.get("description") as string;
+      descriptionBn = formData.get("descriptionBn") as string;
       icon = formData.get("icon") as string;
       iconColor = formData.get("iconColor") as string;
       iconBgColor = formData.get("iconBgColor") as string;
       imageBgColor = formData.get("imageBgColor") as string;
       imageFile = formData.get("image") as File;
+      bannerFile = formData.get("bannerImage") as File;
+      deleteBanner = formData.get("deleteBanner") === "true";
+      existingBanner = formData.get("existingBanner") as string || "";
     } else {
       const body = await request.json();
       id = body.id;
       name = body.name;
       nameBn = body.nameBn;
       country = body.country;
+      description = body.description;
+      descriptionBn = body.descriptionBn;
       icon = body.icon;
       iconColor = body.iconColor;
       iconBgColor = body.iconBgColor;
@@ -218,6 +264,8 @@ export async function PUT(request: NextRequest) {
     }
     if (nameBn?.trim()) updateData.nameBn = nameBn.trim();
     if (country?.trim()) updateData.country = country.trim();
+    if (description !== undefined) updateData.description = description.trim() || "";
+    if (descriptionBn !== undefined) updateData.descriptionBn = descriptionBn.trim() || "";
     if (icon) updateData.icon = icon;
     if (iconColor) updateData.iconColor = iconColor;
     if (iconBgColor) updateData.iconBgColor = iconBgColor;
@@ -229,6 +277,21 @@ export async function PUT(request: NextRequest) {
         await deleteImage(existingBrand.image);
       }
       updateData.image = await saveImage(imageFile, "brands", "brand");
+    }
+
+    // Handle banner upload/delete/keep
+    if (deleteBanner) {
+      if (existingBrand.bannerImage) {
+        await deleteImage(existingBrand.bannerImage);
+      }
+      updateData.bannerImage = "";
+    } else if (bannerFile && bannerFile.size > 0) {
+      if (existingBrand.bannerImage) {
+        await deleteImage(existingBrand.bannerImage);
+      }
+      updateData.bannerImage = await saveImage(bannerFile, "banners", "brand-banner");
+    } else if (existingBanner) {
+      updateData.bannerImage = existingBanner;
     }
 
     const updatedBrand = await updateBrandQuery(id, updateData);
@@ -267,8 +330,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     const brand = await getBrandDetails(id);
-    if (brand && brand.image) {
-      await deleteImage(brand.image);
+    if (brand) {
+      if (brand.image) {
+        await deleteImage(brand.image);
+      }
+      if (brand.bannerImage) {
+        await deleteImage(brand.bannerImage);
+      }
     }
 
     const deleted = await deleteBrandQuery(id);

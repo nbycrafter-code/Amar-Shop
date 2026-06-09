@@ -112,8 +112,13 @@ export async function POST(request: NextRequest) {
     const brandId = formData.get("brand") as string;
     const sizeIds = JSON.parse(formData.get("sizes") as string || "[]");
     const colorIds = JSON.parse(formData.get("colors") as string || "[]");
-    const description = formData.get("description") as string;
-    const descriptionBn = formData.get("descriptionBn") as string;
+
+    // ✅ shortDescription + longDescription (EN + BN)
+    const shortDescription = formData.get("shortDescription") as string || "";
+    const shortDescriptionBn = formData.get("shortDescriptionBn") as string || "";
+    const longDescription = formData.get("longDescription") as string || "";
+    const longDescriptionBn = formData.get("longDescriptionBn") as string || "";
+
     const section = formData.get("section") as string || "none";
     const badge = formData.get("badge") as string || "none";
     const productType = formData.get("productType") as string || "simple";
@@ -150,7 +155,6 @@ export async function POST(request: NextRequest) {
       if (!subCategoryExists) {
         return NextResponse.json({ error: "Selected subcategory does not exist" }, { status: 400 });
       }
-      // Verify subcategory belongs to selected category
       if (subCategoryExists.categoryId.toString() !== categoryId) {
         return NextResponse.json({ error: "Subcategory does not belong to selected category" }, { status: 400 });
       }
@@ -219,8 +223,11 @@ export async function POST(request: NextRequest) {
       brandId,
       sizeIds,
       colorIds,
-      description: description || "",
-      descriptionBn: descriptionBn || description || "",
+      // ✅ Updated description fields
+      shortDescription,
+      shortDescriptionBn: shortDescriptionBn || shortDescription,
+      longDescription,
+      longDescriptionBn: longDescriptionBn || longDescription,
       image: imageUrl,
       multiImages: multiImageUrls,
       video: videoUrl,
@@ -268,8 +275,13 @@ export async function PUT(request: NextRequest) {
     const brandId = formData.get("brand") as string;
     const sizeIds = formData.get("sizes") ? JSON.parse(formData.get("sizes") as string) : undefined;
     const colorIds = formData.get("colors") ? JSON.parse(formData.get("colors") as string) : undefined;
-    const description = formData.get("description") as string;
-    const descriptionBn = formData.get("descriptionBn") as string;
+
+    // ✅ shortDescription + longDescription (EN + BN)
+    const shortDescription = formData.get("shortDescription") as string | null;
+    const shortDescriptionBn = formData.get("shortDescriptionBn") as string | null;
+    const longDescription = formData.get("longDescription") as string | null;
+    const longDescriptionBn = formData.get("longDescriptionBn") as string | null;
+
     const section = formData.get("section") as string;
     const badge = formData.get("badge") as string;
     const productType = formData.get("productType") as string;
@@ -277,7 +289,6 @@ export async function PUT(request: NextRequest) {
     const videoFile = formData.get("video") as File;
     const active = formData.get("active") === "true";
     
-    // Handle multi-images: new files and images to remove
     const multiImageFiles = formData.getAll("multiImages") as File[];
     const removeImagesJson = formData.get("removeImages") as string;
     const removeImages = removeImagesJson ? JSON.parse(removeImagesJson) : [];
@@ -309,14 +320,19 @@ export async function PUT(request: NextRequest) {
     if (brandId) updateData.brandId = brandId;
     if (sizeIds) updateData.sizeIds = sizeIds;
     if (colorIds) updateData.colorIds = colorIds;
-    if (description !== undefined) updateData.description = description;
-    if (descriptionBn !== undefined) updateData.descriptionBn = descriptionBn;
+
+    // ✅ Description fields — null check দিয়ে update
+    if (shortDescription !== null) updateData.shortDescription = shortDescription;
+    if (shortDescriptionBn !== null) updateData.shortDescriptionBn = shortDescriptionBn;
+    if (longDescription !== null) updateData.longDescription = longDescription;
+    if (longDescriptionBn !== null) updateData.longDescriptionBn = longDescriptionBn;
+
     if (section) updateData.section = section;
     if (badge) updateData.badge = badge;
     if (productType) updateData.productType = productType;
     if (active !== undefined) updateData.active = active;
     
-    // Verify subcategory if provided and belongs to category
+    // Verify subcategory
     if (subCategoryId && subCategoryId !== "null" && subCategoryId !== "") {
       const subCategoryExists = await SubCategory.findById(subCategoryId).lean();
       if (!subCategoryExists) {
@@ -347,7 +363,6 @@ export async function PUT(request: NextRequest) {
     // Handle multi-images
     let updatedMultiImages = [...(existingProduct.multiImages || [])];
     
-    // 1. Remove images that user wants to delete
     if (removeImages.length > 0) {
       for (const imageUrl of removeImages) {
         await deleteImage(imageUrl);
@@ -355,7 +370,6 @@ export async function PUT(request: NextRequest) {
       }
     }
     
-    // 2. Upload new images
     if (multiImageFiles.length > 0) {
       const newImageUrls = await Promise.all(
         multiImageFiles.map((file, index) => 

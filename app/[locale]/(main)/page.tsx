@@ -1,4 +1,5 @@
 
+import { getSetting } from "@/queries/settings";
 import { Slider } from "./components/Slider";
 import { Features } from "./components/Features";
 import { Categories } from "./components/Categories";
@@ -15,6 +16,7 @@ import { getHomeSeoMetadata } from "@/lib/seo-metadata";
 import { Metadata } from "next";
 import { getActiveSliders } from "@/queries/sliders";
 import { getActiveBannersByPageType, getBannersByPageAndPosition, getBannersByPosition } from "@/queries/banner";
+import PetShop from "./theme/classic/page";
 
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -23,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-
+  const settings = await getSetting();
   const sliders = await getActiveSliders();
   const categories = await getCategories();
   const products = await getProducts();
@@ -34,23 +36,31 @@ export default async function Home() {
     return p.section === "" || p.section === "none";
   });
   const limitedProducts = products.filter((p) => { return p.section == 'limited-edition' });
-  
+
 
   return (
     <>
-      <Slider sliders={sliders} />
-      <Features />
+      {settings.activeTheme === 'classic' ? (
+        <>
+          <PetShop />
+        </>
+      ) : (
+        <>
+          <Slider settings={settings} sliders={sliders} />
+          <Features settings={settings} />
 
-      <TrendingItems products={trendingProducts} />
+          <TrendingItems settings={settings} products={trendingProducts} />
 
-      <Categories categories={categories} />
-      <PromoBanner promoBanners={promoBanners} />
-      <DealOfDay products={limitedProducts} />
-      <CategoryPromo categoryBanners={categoryBanners} />
+          <Categories settings={settings} categories={categories} />
+          <PromoBanner settings={settings} promoBanners={promoBanners} />
+          <DealOfDay settings={settings} products={limitedProducts} />
+          <CategoryPromo settings={settings} categoryBanners={categoryBanners} />
 
-      <RegularItems products={regularProducts} />
+          <RegularItems settings={settings} products={regularProducts} />
 
-      {/* <BlogPosts /> */}
+          {/* <BlogPosts /> */}
+        </>
+      )}
     </>
   );
 }

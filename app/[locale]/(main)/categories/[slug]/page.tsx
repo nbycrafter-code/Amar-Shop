@@ -5,10 +5,12 @@ import { getBrands } from "@/queries/brands";
 import { getSizes } from "@/queries/sizes";
 import { getColors } from "@/queries/colors";
 import { getSubCategoriesByCategory } from "@/queries/subcategories";
+import { getSetting } from "@/queries/settings";
 
 const CategoryWisePage = async ({ params }) => {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
+  const settings = await getSetting();
 
   const [categories, brands, sizes, colors, singleCategory, products] =
     await Promise.all([
@@ -20,11 +22,12 @@ const CategoryWisePage = async ({ params }) => {
       getProductsByCategory(slug),
     ]);
 
-    const subcategories = await getSubCategoriesByCategory(singleCategory?.id);
-    
+  const subcategories = await getSubCategoriesByCategory(singleCategory?.id);
+
 
   return (
     <PageSet
+      settings={settings}
       categories={categories}
       brands={brands}
       sizes={sizes}

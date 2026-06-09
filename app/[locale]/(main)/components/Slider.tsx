@@ -9,11 +9,19 @@ import "swiper/css/navigation";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 
-export const Slider = ({ sliders: initialSliders }) => {
-  const { language } = useLanguage(); // ✅ যোগ করুন
+interface SliderProps {
+  sliders: any[];
+  settings?: any; // settings prop যোগ করা হলো
+}
+
+export const Slider = ({ sliders: initialSliders, settings = {} }: SliderProps) => {
+  const { language } = useLanguage();
   const [sliders, setSliders] = useState(initialSliders);
   
-  // Optional: Auto-refresh every minute to check date changes
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#d43f2a";
+  
   useEffect(() => {
     const fetchActiveSliders = async () => {
       try {
@@ -27,7 +35,6 @@ export const Slider = ({ sliders: initialSliders }) => {
       }
     };
     
-    // Refresh every minute to check date-based activation/deactivation
     const interval = setInterval(fetchActiveSliders, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -37,7 +44,7 @@ export const Slider = ({ sliders: initialSliders }) => {
   }
 
   return (
-    <section className="relative w-full overflow-hidden bg-[#d9d0cb]">
+    <section className="relative w-full overflow-hidden" style={{ backgroundColor: settings?.backgroundColor || "#d9d0cb" }}>
       <Swiper
         modules={[Autoplay, Pagination, Navigation]}
         spaceBetween={0}
@@ -69,7 +76,6 @@ export const Slider = ({ sliders: initialSliders }) => {
                 backgroundSize: "cover",
               }}
             >
-              {/* Mobile image overlay for responsive design */}
               {banner.mobileImage && (
                 <picture>
                   <source media="(max-width: 768px)" srcSet={banner.mobileImage} />
@@ -88,13 +94,18 @@ export const Slider = ({ sliders: initialSliders }) => {
                     </p>
                   )}
                   <h1 className={`text-3xl md:text-5xl lg:text-6xl font-bold leading-tight ${banner.textColor || 'text-white'}`}>
-                    {banner.title}
                     {language === 'bn' ? banner.titleBn : banner.title}
                   </h1>
                   {banner.buttonText && (
                     <Link
                       href={banner.buttonLink || "/shop"}
-                      className="mt-5 md:mt-6 inline-block rounded bg-[#ef553f] px-6 py-2.5 text-sm md:text-base font-semibold hover:bg-[#d43f2a] transition-all duration-300 hover:scale-105"
+                      className="mt-5 md:mt-6 inline-block rounded px-6 py-2.5 text-sm md:text-base font-semibold transition-all duration-300 hover:scale-105"
+                      style={{ 
+                        backgroundColor: primaryColor,
+                        color: '#FFFFFF'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
                     >
                       {language === 'bn' ? banner.buttonTextBn : banner.buttonText}
                     </Link>
@@ -108,12 +119,18 @@ export const Slider = ({ sliders: initialSliders }) => {
 
       {sliders.length > 1 && (
         <>
-          <button className="banner-button-prv absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white/30 transition-all duration-300">
+          <button 
+            className="banner-button-prv absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white/30 transition-all duration-300"
+            aria-label="Previous slide"
+          >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <button className="banner-button-nxt absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white/30 transition-all duration-300">
+          <button 
+            className="banner-button-nxt absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white/30 transition-all duration-300"
+            aria-label="Next slide"
+          >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -127,14 +144,19 @@ export const Slider = ({ sliders: initialSliders }) => {
           width: 8px;
           height: 8px;
           transition: all 0.3s ease;
+          opacity: 0.7;
         }
         :global(.banner-swiper .swiper-pagination-bullet-active) {
           width: 24px;
           border-radius: 4px;
-          background: #ef553f;
+          background: ${primaryColor};
         }
         :global(.banner-swiper .swiper-pagination) {
           bottom: 20px !important;
+        }
+        :global(.banner-swiper .swiper-pagination-bullet:hover) {
+          background: ${primaryColor};
+          opacity: 1;
         }
       `}</style>
     </section>

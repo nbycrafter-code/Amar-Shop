@@ -1,5 +1,6 @@
 // app/queries/brands.ts
 import { Brand } from "@/models/brand-model";
+import { Product } from "@/models/product-model";
 import { replaceMongoIdInArray, replaceMongoIdInObject } from "@/lib/convertData";
 
 // Types
@@ -8,11 +9,14 @@ export interface BrandData {
   name: string;
   nameBn: string;
   country: string;
+  description?: string;
+  descriptionBn?: string;
   icon?: string;
   iconColor?: string;
   iconBgColor?: string;
   image?: string;
   imageBgColor?: string;
+  bannerImage?: string;
   slug?: string;
   active?: boolean;
   created_at?: Date;
@@ -24,34 +28,66 @@ export interface BrandResponse {
   name: string;
   nameBn: string;
   country: string;
+  description?: string;
+  descriptionBn?: string;
   icon?: string;
   iconColor?: string;
   iconBgColor?: string;
   image?: string;
   imageBgColor?: string;
+  bannerImage?: string;
   slug: string;
   active: boolean;
+  itemCount?: number;
   created_at: Date;
   updated_at: Date;
+}
+
+// Helper function to add item count to brands
+async function addItemCountToBrands(brands: any[]): Promise<any[]> {
+  const brandsWithCount = await Promise.all(
+    brands.map(async (brand) => {
+      const itemCount = await Product.countDocuments({ brandId: brand._id });
+      return {
+        ...brand,
+        itemCount,
+      };
+    })
+  );
+  return brandsWithCount;
+}
+
+// Helper function to add item count to single brand
+async function addItemCountToBrand(brand: any): Promise<any> {
+  if (!brand) return null;
+  const itemCount = await Product.countDocuments({ brandId: brand._id });
+  return {
+    ...brand,
+    itemCount,
+  };
 }
 
 // Get all brands
 export async function getAllBrands(): Promise<BrandResponse[]> {
   const brands = await Brand.find({}).sort({ created_at: -1 }).lean();
-  return replaceMongoIdInArray(brands) as BrandResponse[];
+  const brandsWithCount = await addItemCountToBrands(brands);
+  return replaceMongoIdInArray(brandsWithCount) as BrandResponse[];
 }
 
 // Get active brands only
 export async function getBrands(): Promise<BrandResponse[]> {
   const brands = await Brand.find({ active: true }).sort({ created_at: -1 }).lean();
-  return replaceMongoIdInArray(brands) as BrandResponse[];
+  const brandsWithCount = await addItemCountToBrands(brands);
+  return replaceMongoIdInArray(brandsWithCount) as BrandResponse[];
 }
 
 // Get brand details by ID
 export async function getBrandDetails(brandId: string): Promise<BrandResponse | null> {
   try {
     const brand = await Brand.findById(brandId).lean();
-    return replaceMongoIdInObject(brand) as BrandResponse | null;
+    if (!brand) return null;
+    const brandWithCount = await addItemCountToBrand(brand);
+    return replaceMongoIdInObject(brandWithCount) as BrandResponse | null;
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : "Failed to get brand details");
   }
@@ -61,7 +97,9 @@ export async function getBrandDetails(brandId: string): Promise<BrandResponse | 
 export async function getBrandBySlug(slug: string): Promise<BrandResponse | null> {
   try {
     const brand = await Brand.findOne({ slug }).lean();
-    return replaceMongoIdInObject(brand) as BrandResponse | null;
+    if (!brand) return null;
+    const brandWithCount = await addItemCountToBrand(brand);
+    return replaceMongoIdInObject(brandWithCount) as BrandResponse | null;
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : "Failed to get brand by slug");
   }
@@ -72,7 +110,8 @@ export async function createBrandQuery(brandData: BrandData): Promise<BrandRespo
   try {
     const brand = await Brand.create(brandData);
     const brandObj = brand.toObject();
-    return replaceMongoIdInObject(brandObj) as BrandResponse;
+    const brandWithCount = await addItemCountToBrand(brandObj);
+    return replaceMongoIdInObject(brandWithCount) as BrandResponse;
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : "Failed to create brand");
   }
@@ -86,7 +125,9 @@ export async function updateBrandQuery(brandId: string, brandData: Partial<Brand
       { ...brandData, updated_at: new Date() },
       { new: true, runValidators: true }
     ).lean();
-    return replaceMongoIdInObject(brand) as BrandResponse | null;
+    if (!brand) return null;
+    const brandWithCount = await addItemCountToBrand(brand);
+    return replaceMongoIdInObject(brandWithCount) as BrandResponse | null;
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : "Failed to update brand");
   }
@@ -110,7 +151,9 @@ export async function toggleBrandStatusQuery(brandId: string, active: boolean): 
       { active, updated_at: new Date() },
       { new: true }
     ).lean();
-    return replaceMongoIdInObject(brand) as BrandResponse | null;
+    if (!brand) return null;
+    const brandWithCount = await addItemCountToBrand(brand);
+    return replaceMongoIdInObject(brandWithCount) as BrandResponse | null;
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : "Failed to toggle brand status");
   }
@@ -123,7 +166,8 @@ export async function getBrandsByNames(brandNames: string[]): Promise<BrandRespo
       name: { $in: brandNames },
       active: true 
     }).lean();
-    return replaceMongoIdInArray(brands) as BrandResponse[];
+    const brandsWithCount = await addItemCountToBrands(brands);
+    return replaceMongoIdInArray(brandsWithCount) as BrandResponse[];
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : "Failed to get brands by names");
   }
@@ -140,7 +184,8 @@ export async function searchBrands(query: string): Promise<BrandResponse[]> {
       ],
       active: true
     }).limit(20).lean();
-    return replaceMongoIdInArray(brands) as BrandResponse[];
+    const brandsWithCount = await addItemCountToBrands(brands);
+    return replaceMongoIdInArray(brandsWithCount) as BrandResponse[];
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : "Failed to search brands");
   }

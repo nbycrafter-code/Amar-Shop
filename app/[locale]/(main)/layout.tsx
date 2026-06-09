@@ -2,7 +2,6 @@
 export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "../../globals.css";
 import { AppProvider } from "./context/AppContext";
 import LayoutSet from "./LayoutSet";
 import { dbConnect } from "@/service/mongo";
@@ -46,10 +45,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SessionProvider session={session}>
           <LanguageProvider>
             <AppProvider>
-              <LayoutSet session={session} settings={settings} categories={categories}>
-                {seoResult.jsonLd && <JsonLd data={seoResult.jsonLd} />}
-                {children}
-              </LayoutSet>
+              {settings.activeTheme === 'classic' ? (
+                children
+              ) : (
+                <LayoutSet session={session} settings={settings} categories={categories}>
+                  {seoResult.jsonLd && <JsonLd data={seoResult.jsonLd} />}
+                  {children}
+                </LayoutSet>
+              )}
             </AppProvider>
           </LanguageProvider>
         </SessionProvider>

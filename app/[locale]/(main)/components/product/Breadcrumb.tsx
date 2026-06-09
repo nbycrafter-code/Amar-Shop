@@ -17,13 +17,20 @@ interface BreadcrumbProps {
     slugBn?: string;
   };
   classname?: string;
+  settings?: any; // settings prop যোগ করা হলো
 }
 
-export const Breadcrumb = ({ product, classname = "" }: BreadcrumbProps) => {
+export const Breadcrumb = ({ product, classname = "", settings = {} }: BreadcrumbProps) => {
   const { language } = useLanguage();
   const isBn = language === 'bn';
 
-  // ✅ যদি product না থাকে তাহলে কিছু রেন্ডার করবেন না
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+
+  // যদি product না থাকে তাহলে কিছু রেন্ডার করবেন না
   if (!product) {
     return null;
   }
@@ -31,11 +38,14 @@ export const Breadcrumb = ({ product, classname = "" }: BreadcrumbProps) => {
   return (
     <div className={`py-2 ${classname}`}>
       <div className="container w-full mx-auto px-4">
-        <nav className="text-sm text-gray-500" aria-label="Breadcrumb">
+        <nav className="text-sm" style={{ color: textMuted }} aria-label="Breadcrumb">
           {/* হোম লিংক */}
           <Link
             href="/"
-            className="hover:text-orange-500 cursor-pointer transition-colors duration-200"
+            className="transition-colors duration-200"
+            style={{ color: textMuted }}
+            onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+            onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
           >
             {isBn ? "হোম" : "Home"}
           </Link>
@@ -43,10 +53,13 @@ export const Breadcrumb = ({ product, classname = "" }: BreadcrumbProps) => {
           {/* ক্যাটাগরি */}
           {product.categoryId && product.categoryName && (
             <>
-              <span className="mx-2 text-gray-400">/</span>
+              <span className="mx-2" style={{ color: textMuted }}>/</span>
               <Link
                 href={`/categories/${product.categorySlug}`}
-                className="hover:text-orange-500 cursor-pointer transition-colors duration-200"
+                className="transition-colors duration-200"
+                style={{ color: textMuted }}
+                onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
               >
                 {isBn ? product.categoryNameBn || product.categoryName : product.categoryName}
               </Link>
@@ -56,10 +69,13 @@ export const Breadcrumb = ({ product, classname = "" }: BreadcrumbProps) => {
           {/* সাবক্যাটাগরি */}
           {product.subCategoryId && product.subCategoryName && (
             <>
-              <span className="mx-2 text-gray-400">/</span>
+              <span className="mx-2" style={{ color: textMuted }}>/</span>
               <Link
                 href={`/categories/${product.categorySlug}/${product.subCategorySlug}`}
-                className="hover:text-orange-500 cursor-pointer transition-colors duration-200"
+                className="transition-colors duration-200"
+                style={{ color: textMuted }}
+                onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
               >
                 {isBn ? product.subCategoryNameBn || product.subCategoryName : product.subCategoryName}
               </Link>
@@ -69,8 +85,8 @@ export const Breadcrumb = ({ product, classname = "" }: BreadcrumbProps) => {
           {/* কারেন্ট পেজ (প্রোডাক্ট নাম) */}
           {(product.name || product.nameBn) && (
             <>
-              <span className="mx-2 text-gray-400">/</span>
-              <span className="text-gray-700 font-medium">
+              <span className="mx-2" style={{ color: textMuted }}>/</span>
+              <span className="font-medium" style={{ color: textColor }}>
                 {isBn ? product.nameBn || product.name : product.name}
               </span>
             </>

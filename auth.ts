@@ -1,3 +1,5 @@
+// lib/auth.ts বা আপনার NextAuth কনফিগারেশন ফাইলে
+
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { User } from "./models/user-model";
@@ -11,7 +13,7 @@ import { generateEncryptedToken } from "./lib/encryption";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 hours
+    maxAge: 24 * 60 * 60,
   },
   providers: [
     Google({
@@ -33,17 +35,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
     CredentialsProvider({
       name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+        otpVerified: { label: "OTP Verified", type: "text" },
+        callbackUrl: { label: "Callback URL", type: "text" },
+      },
       async authorize(credentials) {
         try {
-          const isVerifyEmailFlow =
-            credentials?.verifyEmail === "true" ||
-            credentials?.verifyEmail === true;
-
-          if (!isVerifyEmailFlow) {
-            if (!credentials?.email || !credentials?.password) {
-              throw new Error("Email and password are required");
-            }
-          }
+          // ✅ OTP verified flow - password check skip
+          const isVerifyEmailFlow = credentials?.otpVerified === "true";
+          const isOTPFlow = credentials?.otpVerified === true || credentials?.otpVerified === "true";
 
           if (!credentials?.email) {
             throw new Error("Email is required");
@@ -55,26 +57,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             throw new Error("User not found");
           }
 
-          if (!user.isVerified && !isVerifyEmailFlow) {
-            throw new Error(
-              "Please verify your email before logging in. Check your inbox for verification link.",
-            );
-          }
+          // ✅ For OTP verification flow, skip password check
+          if (!isOTPFlow) {
+            if (!credentials?.password) {
+              throw new Error("Password is required");
+            }
+            
+            if (!user.isVerified) {
+              throw new Error("Please verify your email before logging in");
+            }
 
-          if (!user.isActive) {
-            throw new Error("Account is deactivated");
-          }
+            if (!user.isActive) {
+              throw new Error("Account is deactivated");
+            }
 
-          if (!isVerifyEmailFlow) {
             if (!user.password) {
               throw new Error("Please login using Google/Facebook/GitHub");
             }
 
-            const isMatch = await bcrypt.compare(
-              credentials.password,
-              user.password,
-            );
-
+            const isMatch = await bcrypt.compare(credentials.password, user.password);
             if (!isMatch) {
               throw new Error("Invalid password");
             }
@@ -95,8 +96,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             displayName: user.displayName,
             phone: user.phone,
             image: user.image,
-            billingAddress: user.billingAddress || null,    // ✅ null check
-            shippingAddress: user.shippingAddress || null,  // ✅ null check
+            billingAddress: user.billingAddress || null,
+            shippingAddress: user.shippingAddress || null,
           };
         } catch (error) {
           console.error("Authorization error:", error);
@@ -112,7 +113,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const existingUser = await User.findOne({ email: user.email });
 
           if (existingUser) {
-            console.log("Existing user logged in:", existingUser.email);
             existingUser.lastLogin = new Date();
             await existingUser.save();
 
@@ -121,10 +121,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               existingUser.providerId = account.providerAccountId;
               await existingUser.save();
             }
-
             return true;
           } else {
-            console.log("New user signing up:", user.email);
             const newUser = await User.create({
               email: user.email,
               name: user.name,
@@ -134,8 +132,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               isVerified: true,
               isActive: true,
               lastLogin: new Date(),
-              billingAddress: null,   // ✅ initialize
-              shippingAddress: null,  // ✅ initialize
+              billingAddress: null,
+              shippingAddress: null,
             });
             const encryptedToken = generateEncryptedToken(user.email, 'social-login');
             const verificationUrl = `/verify-email?token=${encodeURIComponent(encryptedToken)}`;
@@ -155,7 +153,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
 
     async jwt({ token, user, account, trigger, session }) {
-      // Initial sign in
       if (user) {
         token.id = user.id?.toString();
         token.role = user.role;
@@ -166,10 +163,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.displayName = user.displayName;
         token.phone = user.phone;
         token.image = user.image;
-        token.billingAddress = user.billingAddress || null;   // ✅ set from user
-        token.shippingAddress = user.shippingAddress || null; // ✅ set from user
+        token.billingAddress = user.billingAddress || null;
+        token.shippingAddress = user.shippingAddress || null;
 
-        // Get latest DB user data
         const dbUser = await User.findOne({ email: token.email });
         if (dbUser) {
           token.dbExists = true;
@@ -181,14 +177,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.displayName = dbUser.displayName;
           token.phone = dbUser.phone;
           token.image = dbUser.image;
-          token.billingAddress = dbUser.billingAddress || null;   // ✅ from DB
-          token.shippingAddress = dbUser.shippingAddress || null; // ✅ from DB
+          token.billingAddress = dbUser.billingAddress || null;
+          token.shippingAddress = dbUser.shippingAddress || null;
         }
       }
 
-      // 🔥 Session update handle - এই অংশ ঠিকানা আপডেট করবে
       if (trigger === "update" && session) {
-        // Update token with new user data from session
         if (session.user) {
           token.name = session.user.name;
           token.firstName = session.user.firstName;
@@ -198,7 +192,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.image = session.user.image;
         }
         
-        // ✅ Update addresses from session
         if (session.billingAddress !== undefined) {
           token.billingAddress = session.billingAddress;
         }
@@ -206,12 +199,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.shippingAddress = session.shippingAddress;
         }
 
-        // Update database with new addresses
         if (token.email) {
           try {
-            const updateData: any = {
-              updatedAt: new Date(),
-            };
+            const updateData: any = { updatedAt: new Date() };
             
             if (session.user?.firstName) updateData.firstName = session.user.firstName;
             if (session.user?.lastName) updateData.lastName = session.user.lastName;
@@ -222,7 +212,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             if (session.billingAddress !== undefined) updateData.billingAddress = session.billingAddress;
             if (session.shippingAddress !== undefined) updateData.shippingAddress = session.shippingAddress;
             
-            if (Object.keys(updateData).length > 1) { // more than just updatedAt
+            if (Object.keys(updateData).length > 1) {
               await User.findOneAndUpdate(
                 { email: token.email },
                 { $set: updateData }
@@ -249,12 +239,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.displayName = token.displayName as string;
         session.user.phone = token.phone as string;
         session.user.image = token.image as string;
-        
-        // ✅ Add addresses to session
         session.user.billingAddress = token.billingAddress as object || null;
         session.user.shippingAddress = token.shippingAddress as object || null;
 
-        // If displayName not set, use firstName or email
         if (!session.user.displayName && session.user.firstName) {
           session.user.displayName = session.user.firstName;
         } else if (!session.user.displayName && session.user.email) {

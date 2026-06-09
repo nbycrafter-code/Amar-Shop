@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "../../globals.css";
 import LayoutSet from "./layoutset";
 import { dbConnect } from "@/service/mongo";
 import { auth } from "@/auth";
@@ -9,6 +8,7 @@ import { redirect } from "next/navigation";
 import { Toaster } from "sonner";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { SettingsProvider } from "./context/SettingsContext";
+import { SessionProvider } from "next-auth/react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,12 +30,15 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        <LanguageProvider>
-          <SettingsProvider>
-            <LayoutSet user={session?.user}>{children}</LayoutSet>
-            <Toaster position="top-right" richColors />
-          </SettingsProvider>
-        </LanguageProvider>
+        sdf{session}
+        <SessionProvider session={session}>
+          <LanguageProvider>
+            <SettingsProvider>
+              <LayoutSet user={session?.user}>{children}</LayoutSet>
+              <Toaster position="top-right" richColors />
+            </SettingsProvider>
+          </LanguageProvider>
+        </SessionProvider>
       </body>
     </html>
   );

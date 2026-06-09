@@ -1,4 +1,4 @@
-// app/(main)/products/PageSet.tsx এর শুরুতে
+// app/(main)/products/PageSet.tsx
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -53,6 +53,7 @@ interface PageSetProps {
   products: Product[];
   selectedCategory?: string;
   searchQuery?: string;
+  settings?: any; // settings prop যোগ করা হলো
 }
 
 export const PageSet = ({
@@ -62,9 +63,20 @@ export const PageSet = ({
   colors = [],
   products,
   selectedCategory,
-  searchQuery
+  searchQuery,
+  settings = {}
 }: PageSetProps) => {
-  const { language } = useLanguage(); // ✅ যোগ করুন
+  const { language } = useLanguage();
+
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#d4382c";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const backgroundColor = settings?.backgroundColor || "#F9FAFB";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const cardBg = settings?.cardBackground || "#FFFFFF";
+  const hoverBg = settings?.hoverBackground || "#F3F4F6";
 
   // Filter states
   const [filters, setFilters] = useState<Filters>({
@@ -249,12 +261,13 @@ export const PageSet = ({
   };
 
   return (
-    <div className="bg-gray-50 py-8 min-h-screen">
+    <div className="py-8 min-h-screen" style={{ backgroundColor: backgroundColor }}>
       <div className="container mx-auto px-4">
         {/* Breadcrumb */}
         <Breadcrumb
           page={getBreadcrumbPage()}
           className="py-2"
+          settings={settings}
         />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr] mt-4">
@@ -268,18 +281,19 @@ export const PageSet = ({
               onFilterChange={handleFilterChange}
               initialFilters={filters}
               type="all"
+              settings={settings}
             />
           </div>
 
           {/* Main Content */}
           <div>
             {/* Toolbar */}
-            <div className="bg-white rounded-lg p-4 mb-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="rounded-lg p-4 mb-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4" style={{ backgroundColor: cardBg }}>
               <div>
-                <h1 className="text-xl md:text-2xl font-semibold text-gray-800">
+                <h1 className="text-xl md:text-2xl font-semibold" style={{ color: textColor }}>
                   {getPageTitle()}
                 </h1>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm" style={{ color: textMuted }}>
                   {language === 'bn' 
                     ? `${currentProducts.length} টি পণ্য দেখানো হচ্ছে (মোট ${sortedProducts.length} টি)`
                     : `Showing ${currentProducts.length} of ${sortedProducts.length} products`}
@@ -288,13 +302,16 @@ export const PageSet = ({
               </div>
 
               <div className="flex items-center gap-3">
-                <label className="text-sm text-gray-600">
+                <label className="text-sm" style={{ color: textMuted }}>
                   {language === 'bn' ? 'সাজান:' : 'Sort by:'}
                 </label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-sm bg-white cursor-pointer"
+                  className="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none text-sm bg-white cursor-pointer"
+                  style={{ borderColor: borderColor }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = primaryColor}
+                  onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
                 >
                   {getSortOptions().map((option) => (
                     <option key={option.value} value={option.value}>
@@ -310,7 +327,11 @@ export const PageSet = ({
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                   {currentProducts.map((product) => (
-                    <ProductCard key={product._id || product.id} product={product} />
+                    <ProductCard 
+                      key={product._id || product.id} 
+                      product={product} 
+                      settings={settings}
+                    />
                   ))}
                 </div>
 
@@ -320,11 +341,27 @@ export const PageSet = ({
                     <button
                       onClick={() => goToPage(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                        currentPage === 1
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
-                      }`}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all`}
+                      style={{
+                        backgroundColor: currentPage === 1 ? hoverBg : cardBg,
+                        border: currentPage === 1 ? 'none' : `1px solid ${borderColor}`,
+                        color: currentPage === 1 ? textMuted : textColor,
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (currentPage !== 1) {
+                          e.currentTarget.style.backgroundColor = primaryColor;
+                          e.currentTarget.style.color = '#FFFFFF';
+                          e.currentTarget.style.borderColor = primaryColor;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (currentPage !== 1) {
+                          e.currentTarget.style.backgroundColor = cardBg;
+                          e.currentTarget.style.color = textColor;
+                          e.currentTarget.style.borderColor = borderColor;
+                        }
+                      }}
                       aria-label={language === 'bn' ? 'পূর্ববর্তী' : 'Previous'}
                     >
                       <ChevronLeft size={18} />
@@ -346,11 +383,27 @@ export const PageSet = ({
                         <button
                           key={pageNum}
                           onClick={() => goToPage(pageNum)}
-                          className={`w-10 h-10 rounded-lg transition-all ${
-                            currentPage === pageNum
-                              ? "bg-red-500 text-white shadow-md"
-                              : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
-                          }`}
+                          className="w-10 h-10 rounded-lg transition-all"
+                          style={{
+                            backgroundColor: currentPage === pageNum ? primaryColor : cardBg,
+                            color: currentPage === pageNum ? '#FFFFFF' : textColor,
+                            border: currentPage === pageNum ? 'none' : `1px solid ${borderColor}`,
+                            boxShadow: currentPage === pageNum ? `0 2px 8px ${primaryColor}40` : 'none'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentPage !== pageNum) {
+                              e.currentTarget.style.backgroundColor = primaryColor;
+                              e.currentTarget.style.color = '#FFFFFF';
+                              e.currentTarget.style.borderColor = primaryColor;
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentPage !== pageNum) {
+                              e.currentTarget.style.backgroundColor = cardBg;
+                              e.currentTarget.style.color = textColor;
+                              e.currentTarget.style.borderColor = borderColor;
+                            }
+                          }}
                         >
                           {pageNum}
                         </button>
@@ -360,11 +413,27 @@ export const PageSet = ({
                     <button
                       onClick={() => goToPage(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                        currentPage === totalPages
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
-                      }`}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all`}
+                      style={{
+                        backgroundColor: currentPage === totalPages ? hoverBg : cardBg,
+                        border: currentPage === totalPages ? 'none' : `1px solid ${borderColor}`,
+                        color: currentPage === totalPages ? textMuted : textColor,
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (currentPage !== totalPages) {
+                          e.currentTarget.style.backgroundColor = primaryColor;
+                          e.currentTarget.style.color = '#FFFFFF';
+                          e.currentTarget.style.borderColor = primaryColor;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (currentPage !== totalPages) {
+                          e.currentTarget.style.backgroundColor = cardBg;
+                          e.currentTarget.style.color = textColor;
+                          e.currentTarget.style.borderColor = borderColor;
+                        }
+                      }}
                       aria-label={language === 'bn' ? 'পরবর্তী' : 'Next'}
                     >
                       <ChevronRight size={18} />
@@ -374,12 +443,12 @@ export const PageSet = ({
               </>
             ) : (
               /* Empty State */
-              <div className="bg-white rounded-lg p-12 text-center">
+              <div className="rounded-lg p-12 text-center" style={{ backgroundColor: cardBg }}>
                 <div className="flex flex-col items-center">
                   <svg
-                    className="w-24 h-24 text-gray-400 mb-4"
+                    className="w-24 h-24 mb-4"
                     fill="none"
-                    stroke="currentColor"
+                    stroke={textMuted}
                     viewBox="0 0 24 24"
                   >
                     <path
@@ -389,10 +458,10 @@ export const PageSet = ({
                       d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                     />
                   </svg>
-                  <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                  <h3 className="text-xl font-semibold mb-2" style={{ color: textColor }}>
                     {language === 'bn' ? 'কোন পণ্য পাওয়া যায়নি' : 'No Products Found'}
                   </h3>
-                  <p className="text-gray-500 mb-4">
+                  <p className="mb-4" style={{ color: textMuted }}>
                     {searchQuery
                       ? (language === 'bn' 
                         ? `"${searchQuery}" এর জন্য কোন ফলাফল পাওয়া যায়নি`
@@ -403,7 +472,10 @@ export const PageSet = ({
                   </p>
                   <button
                     onClick={clearAllFilters}
-                    className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    className="px-6 py-2 text-white rounded-lg transition-colors"
+                    style={{ backgroundColor: primaryColor }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
                   >
                     {language === 'bn' ? 'সব ফিল্টার সরান' : 'Clear All Filters'}
                   </button>

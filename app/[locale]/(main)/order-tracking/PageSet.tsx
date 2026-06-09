@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { taka } from "@/utils/currency";
 import { useApp } from "../context/AppContext";
-import { useLanguage } from "@/context/LanguageContext"; // ✅ যোগ করুন
+import { useLanguage } from "@/context/LanguageContext";
 import { toBengaliNumber } from "@/utils/helpers";
 
 interface OrderItem {
@@ -38,11 +38,30 @@ interface Order {
   createdAt: string;
 }
 
-export const PageSet = () => {
+interface PageSetProps {
+  settings?: any; // settings prop যোগ করা হলো
+}
+
+export const PageSet = ({ settings = {} }: PageSetProps) => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { language } = useLanguage(); // ✅ যোগ করুন
+  const { language } = useLanguage();
   const isBn = language === 'bn';
+
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#d44a35";
+  const textColor = settings?.textColor || "#2c3e2f";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const backgroundColor = settings?.backgroundColor || "#f7f5f2";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const cardBg = settings?.cardBackground || "#FFFFFF";
+  const successColor = settings?.successColor || "#10B981";
+  const warningColor = settings?.warningColor || "#F59E0B";
+  const errorColor = settings?.errorColor || "#EF4444";
+  const infoColor = settings?.infoColor || "#3B82F6";
+  const purpleColor = settings?.secondaryColor || "#8B5CF6";
+  const indigoColor = settings?.infoColor || "#6366F1";
 
   const [orderId, setOrderId] = useState("");
   const [phone, setPhone] = useState("");
@@ -145,23 +164,41 @@ export const PageSet = () => {
     setError("");
   };
 
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
+  const getStatusBadgeStyle = (status: string) => {
+    const statusLower = status.toLowerCase();
+    let bgColor, color;
+    
+    switch (statusLower) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        bgColor = `${warningColor}20`;
+        color = warningColor;
+        break;
       case "confirmed":
-        return "bg-blue-100 text-blue-800";
+        bgColor = `${infoColor}20`;
+        color = infoColor;
+        break;
       case "processing":
-        return "bg-purple-100 text-purple-800";
+        bgColor = `${purpleColor}20`;
+        color = purpleColor;
+        break;
       case "shipped":
-        return "bg-indigo-100 text-indigo-800";
+        bgColor = `${indigoColor}20`;
+        color = indigoColor;
+        break;
       case "delivered":
-        return "bg-green-100 text-green-800";
+        bgColor = `${successColor}20`;
+        color = successColor;
+        break;
       case "cancelled":
-        return "bg-red-100 text-red-800";
+        bgColor = `${errorColor}20`;
+        color = errorColor;
+        break;
       default:
-        return "bg-gray-100 text-gray-800";
+        bgColor = `${textMuted}20`;
+        color = textMuted;
     }
+    
+    return { backgroundColor: bgColor, color: color };
   };
 
   const getStatusText = (status: string) => {
@@ -208,14 +245,14 @@ export const PageSet = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f5f2] py-8 md:py-12">
+    <div className="min-h-screen py-8 md:py-12" style={{ backgroundColor: backgroundColor }}>
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-[#2c3e2f] mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: textColor }}>
             {isBn ? "অর্ডার ট্র্যাকিং" : "Order Tracking"}
           </h1>
-          <p className="text-gray-600">
+          <p style={{ color: textMuted }}>
             {isBn
               ? "আপনার অর্ডারের সর্বশেষ অবস্থা জানুন"
               : "Know the latest status of your order"}
@@ -224,23 +261,25 @@ export const PageSet = () => {
 
         {/* Search Section */}
         {!selectedOrder && orders.length === 0 && (
-          <div className="bg-white rounded-2xl shadow-md p-6 mb-8">
-            <div className="flex gap-4 mb-6 border-b">
+          <div className="rounded-2xl shadow-md p-6 mb-8" style={{ backgroundColor: cardBg }}>
+            <div className="flex gap-4 mb-6 border-b" style={{ borderBottomColor: borderColor }}>
               <button
                 onClick={() => setSearchMethod("orderId")}
-                className={`pb-2 px-4 font-medium transition-colors ${searchMethod === "orderId"
-                  ? "text-[#ef553f] border-b-2 border-[#ef553f]"
-                  : "text-gray-500 hover:text-gray-700"
-                  }`}
+                className={`pb-2 px-4 font-medium transition-colors`}
+                style={{
+                  color: searchMethod === "orderId" ? primaryColor : textMuted,
+                  borderBottom: searchMethod === "orderId" ? `2px solid ${primaryColor}` : '2px solid transparent'
+                }}
               >
                 {isBn ? "অর্ডার আইডি দ্বারা" : "By Order ID"}
               </button>
               <button
                 onClick={() => setSearchMethod("phone")}
-                className={`pb-2 px-4 font-medium transition-colors ${searchMethod === "phone"
-                  ? "text-[#ef553f] border-b-2 border-[#ef553f]"
-                  : "text-gray-500 hover:text-gray-700"
-                  }`}
+                className={`pb-2 px-4 font-medium transition-colors`}
+                style={{
+                  color: searchMethod === "phone" ? primaryColor : textMuted,
+                  borderBottom: searchMethod === "phone" ? `2px solid ${primaryColor}` : '2px solid transparent'
+                }}
               >
                 {isBn ? "মোবাইল নম্বর দ্বারা" : "By Mobile Number"}
               </button>
@@ -248,7 +287,7 @@ export const PageSet = () => {
 
             {searchMethod === "orderId" ? (
               <div>
-                <label className="block text-gray-700 font-semibold mb-2">
+                <label className="block font-semibold mb-2" style={{ color: textColor }}>
                   {isBn ? "অর্ডার আইডি" : "Order ID"}
                 </label>
                 <div className="flex gap-3">
@@ -261,13 +300,25 @@ export const PageSet = () => {
                         ? "যেমন: ORD-20241215-1234"
                         : "Example: ORD-20241215-1234"
                     }
-                    className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 focus:border-[#ef553f] focus:ring-1 focus:ring-[#ef553f] transition outline-none"
+                    className="flex-1 border rounded-xl px-4 py-2.5 transition outline-none"
+                    style={{ borderColor: borderColor }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = primaryColor;
+                      e.currentTarget.style.boxShadow = `0 0 0 1px ${primaryColor}`;
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = borderColor;
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                     onKeyPress={(e) => e.key === "Enter" && handleTrackOrder()}
                   />
                   <button
                     onClick={() => handleTrackOrder()}
                     disabled={loading}
-                    className="bg-[#ef553f] hover:bg-[#d44a35] text-white px-6 py-2.5 rounded-xl transition disabled:bg-gray-400"
+                    className="text-white px-6 py-2.5 rounded-xl transition disabled:opacity-50"
+                    style={{ backgroundColor: primaryColor }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
                   >
                     {loading
                       ? isBn
@@ -278,7 +329,7 @@ export const PageSet = () => {
                         : "Track"}
                   </button>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs mt-2" style={{ color: textMuted }}>
                   {isBn
                     ? "আপনার অর্ডার কনফার্মেশন ইমেইলে অর্ডার আইডি পাবেন"
                     : "You will find the order ID in your order confirmation email"}
@@ -286,7 +337,7 @@ export const PageSet = () => {
               </div>
             ) : (
               <div>
-                <label className="block text-gray-700 font-semibold mb-2">
+                <label className="block font-semibold mb-2" style={{ color: textColor }}>
                   {isBn ? "মোবাইল নম্বর" : "Mobile Number"}
                 </label>
                 <div className="flex gap-3">
@@ -295,7 +346,16 @@ export const PageSet = () => {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder={isBn ? "০১XXXXXXXXX" : "01XXXXXXXXX"}
-                    className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 focus:border-[#ef553f] focus:ring-1 focus:ring-[#ef553f] transition outline-none"
+                    className="flex-1 border rounded-xl px-4 py-2.5 transition outline-none"
+                    style={{ borderColor: borderColor }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = primaryColor;
+                      e.currentTarget.style.boxShadow = `0 0 0 1px ${primaryColor}`;
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = borderColor;
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                     onKeyPress={(e) =>
                       e.key === "Enter" && handleTrackByPhone()
                     }
@@ -303,7 +363,10 @@ export const PageSet = () => {
                   <button
                     onClick={() => handleTrackByPhone()}
                     disabled={loading}
-                    className="bg-[#ef553f] hover:bg-[#d44a35] text-white px-6 py-2.5 rounded-xl transition disabled:bg-gray-400"
+                    className="text-white px-6 py-2.5 rounded-xl transition disabled:opacity-50"
+                    style={{ backgroundColor: primaryColor }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
                   >
                     {loading
                       ? isBn
@@ -314,7 +377,7 @@ export const PageSet = () => {
                         : "Search"}
                   </button>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs mt-2" style={{ color: textMuted }}>
                   {isBn
                     ? "অর্ডার করার সময় যে নম্বর ব্যবহার করেছেন সেটি দিন"
                     : "Enter the phone number you used when placing the order"}
@@ -323,7 +386,7 @@ export const PageSet = () => {
             )}
 
             {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+              <div className="mt-4 p-3 rounded-lg text-sm" style={{ backgroundColor: `${errorColor}10`, border: `1px solid ${errorColor}30`, color: errorColor }}>
                 <svg className="inline w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
@@ -336,11 +399,11 @@ export const PageSet = () => {
         {/* Loading State */}
         {loading && (
           <div className="text-center py-12">
-            <svg className="animate-spin w-12 h-12 text-[#ef553f] mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin w-12 h-12 mx-auto" style={{ color: primaryColor }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <p className="mt-4 text-gray-600">
+            <p className="mt-4" style={{ color: textMuted }}>
               {isBn
                 ? "অর্ডার তথ্য সংগ্রহ করা হচ্ছে..."
                 : "Fetching order information..."}
@@ -352,7 +415,7 @@ export const PageSet = () => {
         {!loading && orders.length > 0 && !selectedOrder && (
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">
+              <h2 className="text-xl font-bold" style={{ color: textColor }}>
                 {isBn ? "আপনার অর্ডারসমূহ" : "Your Orders"} (
                 {isBn && !isNaN(Number(orders.length))
                   ? toBengaliNumber(orders.length.toString())
@@ -361,7 +424,8 @@ export const PageSet = () => {
               </h2>
               <button
                 onClick={handleBackToSearch}
-                className="text-[#ef553f] hover:underline text-sm"
+                className="text-sm hover:underline"
+                style={{ color: primaryColor }}
               >
                 <svg className="inline w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -373,22 +437,22 @@ export const PageSet = () => {
             {orders.map((order) => (
               <div
                 key={order._id}
-                className="bg-white rounded-2xl shadow-md p-5 hover:shadow-lg transition cursor-pointer"
+                className="rounded-2xl shadow-md p-5 hover:shadow-lg transition cursor-pointer"
+                style={{ backgroundColor: cardBg }}
                 onClick={() => handleViewOrderDetails(order)}
               >
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm" style={{ color: textMuted }}>
                       {isBn ? "অর্ডার আইডি" : "Order ID"}
                     </p>
-                    <p className="font-semibold text-gray-800">
+                    <p className="font-semibold" style={{ color: textColor }}>
                       {order.orderId}
                     </p>
                   </div>
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(
-                      order.orderStatus,
-                    )}`}
+                    className="px-3 py-1 rounded-full text-xs font-semibold"
+                    style={getStatusBadgeStyle(order.orderStatus)}
                   >
                     {getStatusText(order.orderStatus)}
                   </span>
@@ -396,18 +460,18 @@ export const PageSet = () => {
 
                 <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
                   <div>
-                    <p className="text-gray-500">{isBn ? "তারিখ" : "Date"}</p>
-                    <p className="text-gray-800">
+                    <p className="text-sm" style={{ color: textMuted }}>{isBn ? "তারিখ" : "Date"}</p>
+                    <p style={{ color: textColor }}>
                       {isBn
                         ? formatDateBn(order.createdAt)
                         : formatDate(order.createdAt)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500">
+                    <p className="text-sm" style={{ color: textMuted }}>
                       {isBn ? "মোট মূল্য" : "Total"}
                     </p>
-                    <p className="text-gray-800 font-semibold">
+                    <p className="font-semibold" style={{ color: primaryColor }}>
                       {isBn
                         ? toBengaliNumber(taka(order.total).toString())
                         : taka(order.total)}
@@ -415,7 +479,7 @@ export const PageSet = () => {
                   </div>
                 </div>
 
-                <div className="text-sm text-gray-600">
+                <div className="text-sm" style={{ color: textMuted }}>
                   <p>
                     {isBn ? "আইটেম" : "Items"}:{" "}
                     {isBn
@@ -425,7 +489,7 @@ export const PageSet = () => {
                   </p>
                 </div>
 
-                <button className="mt-3 text-[#ef553f] text-sm hover:underline">
+                <button className="mt-3 text-sm hover:underline" style={{ color: primaryColor }}>
                   {isBn ? "বিস্তারিত দেখুন" : "View Details"}{" "}
                   <svg className="inline w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -441,7 +505,8 @@ export const PageSet = () => {
           <div className="space-y-6">
             <button
               onClick={handleBackToSearch}
-              className="text-[#ef553f] hover:underline mb-4 inline-flex items-center"
+              className="mb-4 inline-flex items-center hover:underline"
+              style={{ color: primaryColor }}
             >
               <svg className="inline w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -450,16 +515,15 @@ export const PageSet = () => {
             </button>
 
             {/* Order Info Card */}
-            <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-              <div className="bg-gradient-to-r from-[#ef553f] to-[#d44a35] px-6 py-4">
+            <div className="rounded-2xl shadow-md overflow-hidden" style={{ backgroundColor: cardBg }}>
+              <div className="px-6 py-4" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${buttonHoverColor})` }}>
                 <div className="flex justify-between items-center flex-wrap gap-2">
                   <h2 className="text-white font-bold text-xl">
                     {isBn ? "অর্ডার তথ্য" : "Order Information"}
                   </h2>
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(
-                      selectedOrder.orderStatus,
-                    )}`}
+                    className="px-3 py-1 rounded-full text-xs font-semibold"
+                    style={getStatusBadgeStyle(selectedOrder.orderStatus)}
                   >
                     {getStatusText(selectedOrder.orderStatus)}
                   </span>
@@ -469,60 +533,60 @@ export const PageSet = () => {
               <div className="p-6 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm" style={{ color: textMuted }}>
                       {isBn ? "অর্ডার আইডি" : "Order ID"}
                     </p>
-                    <p className="font-semibold text-gray-800">
+                    <p className="font-semibold" style={{ color: textColor }}>
                       {selectedOrder.orderId}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm" style={{ color: textMuted }}>
                       {isBn ? "তারিখ" : "Date"}
                     </p>
-                    <p className="text-gray-800">
+                    <p style={{ color: textColor }}>
                       {isBn ? formatDateBn(selectedOrder.createdAt) : formatDate(selectedOrder.createdAt)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm" style={{ color: textMuted }}>
                       {isBn ? "নাম" : "Name"}
                     </p>
-                    <p className="text-gray-800">
+                    <p style={{ color: textColor }}>
                       {selectedOrder.customerName}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm" style={{ color: textMuted }}>
                       {isBn ? "মোবাইল" : "Mobile"}
                     </p>
-                    <p className="text-gray-800">
+                    <p style={{ color: textColor }}>
                       {selectedOrder.customerPhone}
                     </p>
                   </div>
                   <div className="md:col-span-2">
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm" style={{ color: textMuted }}>
                       {isBn ? "ঠিকানা" : "Address"}
                     </p>
-                    <p className="text-gray-800">
+                    <p style={{ color: textColor }}>
                       {selectedOrder.customerAddress}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm" style={{ color: textMuted }}>
                       {isBn ? "পেমেন্ট পদ্ধতি" : "Payment Method"}
                     </p>
-                    <p className="text-gray-800">
+                    <p style={{ color: textColor }}>
                       {selectedOrder.paymentMethod === "cash_on_delivery"
                         ? isBn ? "ক্যাশ অন ডেলিভারি" : "Cash on Delivery"
                         : isBn ? "অনলাইন পেমেন্ট" : "Online Payment"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm" style={{ color: textMuted }}>
                       {isBn ? "পেমেন্ট স্ট্যাটাস" : "Payment Status"}
                     </p>
-                    <p className="text-gray-800">
+                    <p style={{ color: textColor }}>
                       {getPaymentStatusText(selectedOrder.paymentStatus)}
                     </p>
                   </div>
@@ -531,9 +595,9 @@ export const PageSet = () => {
             </div>
 
             {/* Products Card */}
-            <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-              <div className="border-b border-gray-200 px-6 py-4">
-                <h3 className="font-bold text-lg text-gray-800">
+            <div className="rounded-2xl shadow-md overflow-hidden" style={{ backgroundColor: cardBg }}>
+              <div className="border-b px-6 py-4" style={{ borderBottomColor: borderColor }}>
+                <h3 className="font-bold text-lg" style={{ color: textColor }}>
                   {isBn ? "অর্ডারকৃত পণ্যসমূহ" : "Ordered Products"}
                 </h3>
               </div>
@@ -541,7 +605,8 @@ export const PageSet = () => {
                 {selectedOrder.items.map((item, idx) => (
                   <div
                     key={idx}
-                    className="flex gap-4 border-b border-gray-100 pb-4 last:border-0"
+                    className="flex gap-4 border-b pb-4 last:border-0"
+                    style={{ borderBottomColor: borderColor }}
                   >
                     {item.image && (
                       <img
@@ -551,57 +616,46 @@ export const PageSet = () => {
                       />
                     )}
                     <div className="flex-1">
-                      <h4 className="font-semibold text-gray-800">
+                      <h4 className="font-semibold" style={{ color: textColor }}>
                         {isBn ? item.nameBn : item.name}
                       </h4>
                       {item.selectedSize && (
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm" style={{ color: textMuted }}>
                           {isBn ? "সাইজ" : "Size"}: {item.selectedSize}
                         </p>
                       )}
                       {item.selectedColor && (
-                        // <p className="text-sm text-gray-500">
-                        //   {isBn ? "রং" : "Color"}:{" "}
-                        //   <span
-                        //     className="w-3 h-3 rounded-full border border-gray-300 inline-flex"
-                        //     style={{
-                        //       backgroundColor:
-                        //         item.selectedColorHex || "",
-                        //     }}
-                        //   />
-                        //   {isBn ? item.selectedColorBn : item.selectedColor}
-                        // </p>
                         <div className="flex items-center gap-1">
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs" style={{ color: textMuted }}>
                             {isBn ? "রং" : "Color"}:
                           </span>
                           <span
-                            className="w-3 h-3 rounded-full border border-gray-300"
+                            className="w-3 h-3 rounded-full border"
                             style={{
-                              backgroundColor:
-                                item.selectedColorHex || "#000",
+                              backgroundColor: item.selectedColorHex || "#000",
+                              borderColor: borderColor
                             }}
                           />
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs" style={{ color: textMuted }}>
                             {isBn
                               ? (item.selectedColorBn || item.selectedColor)
                               : (item.selectedColor || item.selectedColorBn)}
                           </span>
                         </div>
                       )}
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm" style={{ color: textMuted }}>
                         {isBn ? "পরিমাণ" : "Quantity"}: {item.quantity}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-gray-800">
+                      <p className="font-semibold" style={{ color: primaryColor }}>
                         {isBn
                           ? toBengaliNumber(
                             taka(item.price * item.quantity).toString(),
                           )
                           : taka(item.price * item.quantity)}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm" style={{ color: textMuted }}>
                         {isBn
                           ? toBengaliNumber(taka(item.price).toString())
                           : taka(item.price)}{" "}
@@ -617,26 +671,26 @@ export const PageSet = () => {
             </div>
 
             {/* Order Summary */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <h3 className="font-bold text-lg text-gray-800 mb-4">
+            <div className="rounded-2xl shadow-md p-6" style={{ backgroundColor: cardBg }}>
+              <h3 className="font-bold text-lg mb-4" style={{ color: textColor }}>
                 {isBn ? "মূল্য বিবরণী" : "Price Summary"}
               </h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">
+                  <span style={{ color: textMuted }}>
                     {isBn ? "সাবটোটাল" : "Subtotal"}
                   </span>
-                  <span className="text-gray-800">
+                  <span style={{ color: textColor }}>
                     {isBn
                       ? toBengaliNumber(taka(selectedOrder.subtotal).toString())
                       : taka(selectedOrder.subtotal)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">
+                  <span style={{ color: textMuted }}>
                     {isBn ? "ডেলিভারি চার্জ" : "Delivery Charge"}
                   </span>
-                  <span className="text-gray-800">
+                  <span style={{ color: textColor }}>
                     {isBn
                       ? toBengaliNumber(
                         taka(selectedOrder.deliveryCharge).toString(),
@@ -644,12 +698,12 @@ export const PageSet = () => {
                       : taka(selectedOrder.deliveryCharge)}
                   </span>
                 </div>
-                <div className="border-t pt-2 mt-2">
+                <div className="border-t pt-2 mt-2" style={{ borderTopColor: borderColor }}>
                   <div className="flex justify-between font-bold text-lg">
-                    <span className="text-gray-800">
+                    <span style={{ color: textColor }}>
                       {isBn ? "মোট" : "Total"}
                     </span>
-                    <span className="text-[#ef553f]">
+                    <span style={{ color: primaryColor }}>
                       {isBn
                         ? toBengaliNumber(taka(selectedOrder.total).toString())
                         : taka(selectedOrder.total)}
@@ -660,27 +714,27 @@ export const PageSet = () => {
             </div>
 
             {/* Support Card */}
-            <div className="bg-amber-50 rounded-2xl p-6 border border-amber-200">
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: `${warningColor}10`, borderColor: `${warningColor}30` }}>
               <div className="flex items-start gap-3">
-                <svg className="w-8 h-8 text-[#ef553f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8" style={{ color: primaryColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-1">
+                  <h4 className="font-semibold mb-1" style={{ color: textColor }}>
                     {isBn ? "সাহায্য প্রয়োজন?" : "Need Help?"}
                   </h4>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm mb-2" style={{ color: textMuted }}>
                     {isBn
                       ? "অর্ডার সংক্রান্ত যেকোনো সমস্যায় আমাদের সাথে যোগাযোগ করুন"
                       : "Contact us for any order-related issues"}
                   </p>
-                  <p className="text-lg font-bold text-[#ef553f]">
+                  <p className="text-lg font-bold" style={{ color: primaryColor }}>
                     <svg className="inline w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
                     {isBn ? toBengaliNumber("01741571104") : "01741571104"}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs mt-1" style={{ color: textMuted }}>
                     {isBn
                       ? "সকাল ১০টা - রাত ৯টা (শুক্রবার বন্ধ)"
                       : "10:00 AM - 9:00 PM (Closed on Fridays)"}

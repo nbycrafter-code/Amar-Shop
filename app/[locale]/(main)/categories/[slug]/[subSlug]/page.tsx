@@ -10,7 +10,7 @@ const SubCategoryWisePage = async ({ params }) => {
   const resolvedParams = await params;
   const subSlug = resolvedParams.subSlug;  
 
-  const [categories, brands, sizes, colors, singleCategory, products] =
+  const [categories, brands, sizes, colors, subCategoryData, products] =
     await Promise.all([
       getCategories(),
       getBrands(),
@@ -26,7 +26,7 @@ const SubCategoryWisePage = async ({ params }) => {
       brands={brands}
       sizes={sizes}
       colors={colors}
-      categoryData={singleCategory}
+      subCategoryData={subCategoryData}
       products={products}
     />
   );

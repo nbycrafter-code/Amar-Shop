@@ -4,8 +4,10 @@ import { getBrands } from "@/queries/brands";
 import { getSizes } from "@/queries/sizes";
 import { getColors } from "@/queries/colors";
 import { getProductsByBadge } from "@/queries/products";
+import { getSetting } from "@/queries/settings";
 
 const OffersPage = async ({ }) => {
+  const settings = await getSetting();
 
   const [categories, brands, sizes, colors, products] =
     await Promise.all([
@@ -20,6 +22,7 @@ const OffersPage = async ({ }) => {
   return (
     // <>Check: {categorySlug} : {categorySearch}</>
     <PageSet
+      settings={settings}
       categories={categories}
       brands={brands}
       sizes={sizes}

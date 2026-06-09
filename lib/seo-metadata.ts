@@ -365,12 +365,12 @@ async function getFallbackMetadata(
 
   if (type === 'home') {
     const title = language === 'bn'
-      ? (settings?.titleBn || settings?.title || 'আমারশপ - আপনার অনলাইন শপ')
-      : (settings?.title || 'AmarShop - Your Online Shop');
+      ? (settings?.siteTitleBn || settings?.siteTitle || 'আমারশপ - আপনার অনলাইন শপ')
+      : (settings?.siteTitle || 'AmarShop - Your Online Shop');
 
     const description = language === 'bn'
-      ? (settings?.descriptionBn || settings?.description || 'সেরা দামে কেনাকাটা করুন। সর্বোচ্চ মানের পণ্য, দ্রুত ডেলিভারি।')
-      : (settings?.description || 'Best price shopping. Quality products, fast delivery.');
+      ? (settings?.siteDescriptionBn || settings?.siteDescription || 'সেরা দামে কেনাকাটা করুন। সর্বোচ্চ মানের পণ্য, দ্রুত ডেলিভারি।')
+      : (settings?.siteDescription || 'Best price shopping. Quality products, fast delivery.');
 
     const homeUrl = `${baseUrl}${langPrefix}`;
 

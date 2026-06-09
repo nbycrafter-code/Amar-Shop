@@ -4,6 +4,7 @@ import { getBrands } from "@/queries/brands";
 import { getSizes } from "@/queries/sizes";
 import { getColors } from "@/queries/colors";
 import { searchProducts } from "@/queries/products";
+import { getSetting } from "@/queries/settings";
 
 interface ProductsPageProps {
   searchParams: Promise<{
@@ -34,6 +35,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   
   const categorySlug = resolvedParams?.category || null;
   const encodedSearchQuery = resolvedParams?.search || null;
+  const settings = await getSetting();
   
   // ✅ সঠিকভাবে ডিকোড করা
   const searchText = decodeSearchQuery(encodedSearchQuery);
@@ -55,6 +57,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   
   return (
     <PageSet
+      settings={settings}
       categories={categories}
       brands={brands}
       sizes={sizes}

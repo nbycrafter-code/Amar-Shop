@@ -34,7 +34,7 @@ function StarRating({ rating, count }: { rating: number; count?: number }) {
           size={14}
           className={
             i < rating
-              ? "text-orange-400 fill-orange-400"
+              ? "text-yellow-400 fill-yellow-400"
               : "text-gray-300 fill-gray-200"
           }
         />
@@ -48,14 +48,30 @@ function StarRating({ rating, count }: { rating: number; count?: number }) {
   );
 }
 
-export default function ProductDetail({ product }) {
+interface ProductDetailProps {
+  product: any;
+  settings?: any; // settings prop যোগ করা হলো
+}
+
+export default function ProductDetail({ product, settings = {} }: ProductDetailProps) {
   const { addToCart, addToWishlist } = useApp();
   const { language } = useLanguage();
   const isBn = language === 'bn';
 
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#f97316";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#ea580c";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const cardBg = settings?.cardBackground || "#FFFFFF";
+  const hoverBg = settings?.hoverBackground || "#F3F4F6";
+  const successColor = settings?.successColor || "#10B981";
+  const warningColor = settings?.warningColor || "#F59E0B";
+
   // First color and first size selected by default
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
-  const [selectedSize, setSelectedSize] = useState(product?.sizeNames?.[0] || ""); // ✅ ফিক্স: = useState
+  const [selectedSize, setSelectedSize] = useState(product?.sizeNames?.[0] || "");
   const [selectedSizeBn, setSelectedSizeBn] = useState(product?.sizeNamesBn?.[0] || "");
   const [qty, setQty] = useState(1);
   const [activeThumb, setActiveThumb] = useState(0);
@@ -127,7 +143,6 @@ export default function ProductDetail({ product }) {
     return "#000000";
   };
 
-  // Handle size selection with Bengali support
   const handleSizeSelect = (size: string, sizeBn?: string) => {
     setSelectedSize(size);
     setSelectedSizeBn(sizeBn || size);
@@ -138,7 +153,6 @@ export default function ProductDetail({ product }) {
     setSelectedSizeBn("");
   };
 
-  // Get badge text based on language
   const getBadgeText = (badge: string) => {
     const badges = {
       hot: isBn ? "গরম 🔥" : "HOT 🔥",
@@ -158,20 +172,38 @@ export default function ProductDetail({ product }) {
       <div className="w-full lg:w-[380px] flex-shrink-0">
         {/* Zoom controls */}
         <div className="flex items-center justify-end gap-2 mb-2">
-          <div className="flex items-center gap-1 bg-gray-100 rounded-full p-1">
+          <div className="flex items-center gap-1 rounded-full p-1" style={{ backgroundColor: hoverBg }}>
             <button
               onClick={handleZoomOut}
-              className="p-1.5 hover:bg-white rounded-full transition-colors"
+              className="p-1.5 rounded-full transition-colors"
+              style={{ color: textMuted }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = cardBg;
+                e.currentTarget.style.color = primaryColor;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = textMuted;
+              }}
               title={isBn ? "জুম আউট" : "Zoom Out"}
             >
               <ZoomOut size={14} />
             </button>
-            <span className="text-xs font-medium text-gray-700 min-w-[45px] text-center">
+            <span className="text-xs font-medium min-w-[45px] text-center" style={{ color: textColor }}>
               {zoomLevel}%
             </span>
             <button
               onClick={handleZoomIn}
-              className="p-1.5 hover:bg-white rounded-full transition-colors"
+              className="p-1.5 rounded-full transition-colors"
+              style={{ color: textMuted }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = cardBg;
+                e.currentTarget.style.color = primaryColor;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = textMuted;
+              }}
               title={isBn ? "জুম ইন" : "Zoom In"}
             >
               <ZoomIn size={14} />
@@ -182,7 +214,8 @@ export default function ProductDetail({ product }) {
         {/* Main image with zoom */}
         <div
           ref={imageContainerRef}
-          className="relative border border-gray-200 rounded overflow-hidden bg-gray-50 mb-3 group cursor-crosshair"
+          className="relative border rounded overflow-hidden mb-3 group cursor-crosshair"
+          style={{ borderColor: borderColor, backgroundColor: hoverBg }}
           onMouseMove={handleMouseMove}
           onMouseEnter={() => setShowZoom(true)}
           onMouseLeave={() => setShowZoom(false)}
@@ -194,7 +227,6 @@ export default function ProductDetail({ product }) {
               className="w-full h-full object-cover object-top"
             />
 
-            {/* Zoom lens effect */}
             {showZoom && zoomLevel > 100 && (
               <div
                 className="absolute inset-0 pointer-events-none"
@@ -208,17 +240,15 @@ export default function ProductDetail({ product }) {
             )}
           </div>
 
-          {/* Zoom indicator */}
           {showZoom && zoomLevel > 100 && (
-            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
+            <div className="absolute bottom-2 right-2 text-white text-xs px-2 py-1 rounded backdrop-blur-sm" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
               {zoomLevel}% {isBn ? 'জুম' : 'zoom'}
             </div>
           )}
 
-          {/* Badges */}
           {product.badge && product.badge !== "none" && (
             <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
-              <span className="bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+              <span className="text-white text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: primaryColor }}>
                 {getBadgeText(product.badge)}
               </span>
             </div>
@@ -226,13 +256,31 @@ export default function ProductDetail({ product }) {
 
           <button
             onClick={() => goSlide("prev")}
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white shadow rounded-full w-7 h-7 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 z-10"
+            className="absolute left-2 top-1/2 -translate-y-1/2 shadow rounded-full w-7 h-7 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 z-10"
+            style={{ backgroundColor: cardBg, color: textMuted }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = primaryColor;
+              e.currentTarget.style.color = '#FFFFFF';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = cardBg;
+              e.currentTarget.style.color = textMuted;
+            }}
           >
             <ChevronLeft size={14} />
           </button>
           <button
             onClick={() => goSlide("next")}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white shadow rounded-full w-7 h-7 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 z-10"
+            className="absolute right-2 top-1/2 -translate-y-1/2 shadow rounded-full w-7 h-7 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 z-10"
+            style={{ backgroundColor: cardBg, color: textMuted }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = primaryColor;
+              e.currentTarget.style.color = '#FFFFFF';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = cardBg;
+              e.currentTarget.style.color = textMuted;
+            }}
           >
             <ChevronRight size={14} />
           </button>
@@ -243,7 +291,16 @@ export default function ProductDetail({ product }) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => goSlide("prev")}
-              className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 hover:bg-orange-500 hover:text-white flex items-center justify-center transition-colors"
+              className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+              style={{ backgroundColor: hoverBg, color: textMuted }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = primaryColor;
+                e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = hoverBg;
+                e.currentTarget.style.color = textMuted;
+              }}
             >
               <ChevronLeft size={12} />
             </button>
@@ -252,10 +309,10 @@ export default function ProductDetail({ product }) {
                 <button
                   key={i}
                   onClick={() => setActiveThumb(i)}
-                  className={`w-12 h-12 flex-shrink-0 border-2 rounded overflow-hidden transition-all ${activeThumb === i
-                    ? "border-orange-500"
-                    : "border-gray-200 hover:border-orange-300"
-                    }`}
+                  className={`w-12 h-12 flex-shrink-0 border-2 rounded overflow-hidden transition-all`}
+                  style={{
+                    borderColor: activeThumb === i ? primaryColor : borderColor
+                  }}
                 >
                   <img
                     src={thumb}
@@ -267,7 +324,16 @@ export default function ProductDetail({ product }) {
             </div>
             <button
               onClick={() => goSlide("next")}
-              className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 hover:bg-orange-500 hover:text-white flex items-center justify-center transition-colors"
+              className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+              style={{ backgroundColor: hoverBg, color: textMuted }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = primaryColor;
+                e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = hoverBg;
+                e.currentTarget.style.color = textMuted;
+              }}
             >
               <ChevronRight size={12} />
             </button>
@@ -275,22 +341,22 @@ export default function ProductDetail({ product }) {
         )}
 
         {/* Trust badges */}
-        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-gray-100 pt-3">
+        <div className="mt-4 grid grid-cols-3 gap-2 border-t pt-3" style={{ borderTopColor: borderColor }}>
           <div className="flex flex-col items-center gap-1 text-center">
-            <ShieldCheck size={22} className="text-green-600" />
-            <span className="text-[12px] text-gray-600 font-medium">
+            <ShieldCheck size={22} style={{ color: successColor }} />
+            <span className="text-[12px] font-medium" style={{ color: textMuted }}>
               {isBn ? "১০০% অরিজিনাল" : "100% Original"}
             </span>
           </div>
           <div className="flex flex-col items-center gap-1 text-center">
-            <span className="text-green-600 text-[16px] font-bold">৳</span>
-            <span className="text-[12px] text-gray-600 font-medium">
+            <span className="text-[16px] font-bold" style={{ color: successColor }}>৳</span>
+            <span className="text-[12px] font-medium" style={{ color: textMuted }}>
               {isBn ? "সেরা দাম" : "Best Price"}
             </span>
           </div>
           <div className="flex flex-col items-center gap-1 text-center">
-            <Truck size={22} className="text-green-600" />
-            <span className="text-[12px] text-gray-600 font-medium">
+            <Truck size={22} style={{ color: successColor }} />
+            <span className="text-[12px] font-medium" style={{ color: textMuted }}>
               {isBn ? "ফ্রি শিপিং" : "Free Shipping"}
             </span>
           </div>
@@ -301,11 +367,11 @@ export default function ProductDetail({ product }) {
       <div className="flex-1 min-w-0">
         {/* Brand & Title */}
         <div className="mb-3">
-          <p className="text-xs text-orange-500 font-medium mb-1">
+          <p className="text-xs font-medium mb-1" style={{ color: primaryColor }}>
             {isBn ? "ব্র্যান্ড:" : "Brand:"}{" "}
-            <span className="text-orange-600 font-semibold">{product.brand || "Creative"}</span>
+            <span className="font-semibold" style={{ color: primaryColor }}>{product.brand || "Creative"}</span>
           </p>
-          <h1 className="text-xl font-bold text-gray-900 leading-tight mb-2">
+          <h1 className="text-xl font-bold leading-tight mb-2" style={{ color: textColor }}>
             {isBn ? (product.nameBn || product.name) : product.name}
           </h1>
           <div className="flex items-center gap-3">
@@ -315,20 +381,20 @@ export default function ProductDetail({ product }) {
 
         {/* Price */}
         <div className="flex items-baseline gap-3 mb-3">
-          <span className="text-3xl font-black text-gray-900">
+          <span className="text-3xl font-black" style={{ color: textColor }}>
             {taka(product.price)}
           </span>
           {product.originalPrice && product.originalPrice > product.price && (
-            <span className="text-lg text-gray-500 line-through">
+            <span className="text-lg line-through" style={{ color: textMuted }}>
               {taka(product.originalPrice)}
             </span>
           )}
         </div>
 
         {/* Hot sale badge */}
-        <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded px-3 py-1.5 mb-4 w-fit">
-          <Flame size={14} className="text-orange-500" />
-          <span className="text-xs text-orange-600 font-medium">
+        <div className="flex items-center gap-2 border rounded px-3 py-1.5 mb-4 w-fit" style={{ backgroundColor: `${warningColor}20`, borderColor: `${warningColor}30` }}>
+          <Flame size={14} style={{ color: warningColor }} />
+          <span className="text-xs font-medium" style={{ color: warningColor }}>
             {product.sales || 0} {isBn ? "পণ্য সম্প্রতি বিক্রি হয়েছে" : "products sold recently"}
           </span>
         </div>
@@ -336,7 +402,7 @@ export default function ProductDetail({ product }) {
         {/* Color */}
         {product.colorHexes && product.colorHexes.length > 0 && (
           <div className="mb-4">
-            <p className="text-sm font-semibold text-gray-800 mb-2">
+            <p className="text-sm font-semibold mb-2" style={{ color: textColor }}>
               {isBn ? "রঙ:" : "Color:"} {getSelectedColorName()}
             </p>
             <div className="flex items-center gap-2">
@@ -345,11 +411,13 @@ export default function ProductDetail({ product }) {
                   key={i}
                   onClick={() => setSelectedColorIndex(i)}
                   title={isBn ? product.colorNamesBn?.[i] : product.colorNames?.[i]}
-                  className={`w-8 h-8 rounded-full border-2 transition-all ${selectedColorIndex === i
-                    ? "border-orange-500 scale-110 shadow"
-                    : "border-gray-300 hover:border-gray-500"
-                    }`}
-                  style={{ backgroundColor: color }}
+                  className={`w-8 h-8 rounded-full border-2 transition-all`}
+                  style={{
+                    backgroundColor: color,
+                    borderColor: selectedColorIndex === i ? primaryColor : borderColor,
+                    transform: selectedColorIndex === i ? 'scale(1.1)' : 'scale(1)',
+                    boxShadow: selectedColorIndex === i ? `0 0 0 2px ${primaryColor}20` : 'none'
+                  }}
                 />
               ))}
             </div>
@@ -360,7 +428,7 @@ export default function ProductDetail({ product }) {
         {product.sizeNames && product.sizeNames.length > 0 && (
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold text-gray-800">
+              <p className="text-sm font-semibold" style={{ color: textColor }}>
                 {isBn ? "সাইজ:" : "Size:"} {isBn ? selectedSizeBn : selectedSize}
               </p>
             </div>
@@ -371,10 +439,24 @@ export default function ProductDetail({ product }) {
                   <button
                     key={size}
                     onClick={() => handleSizeSelect(size, sizeBn)}
-                    className={`px-3 py-1 text-sm border rounded font-medium transition-all ${selectedSize === size
-                      ? "bg-orange-500 text-white border-orange-500"
-                      : "border-gray-300 text-gray-700 hover:border-orange-400 hover:text-orange-500"
-                      }`}
+                    className={`px-3 py-1 text-sm border rounded font-medium transition-all`}
+                    style={{
+                      backgroundColor: selectedSize === size ? primaryColor : 'transparent',
+                      color: selectedSize === size ? '#FFFFFF' : textMuted,
+                      borderColor: selectedSize === size ? primaryColor : borderColor
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedSize !== size) {
+                        e.currentTarget.style.borderColor = primaryColor;
+                        e.currentTarget.style.color = primaryColor;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedSize !== size) {
+                        e.currentTarget.style.borderColor = borderColor;
+                        e.currentTarget.style.color = textMuted;
+                      }
+                    }}
                   >
                     {isBn ? sizeBn : size}
                   </button>
@@ -383,13 +465,16 @@ export default function ProductDetail({ product }) {
               {selectedSize && (
                 <button
                   onClick={clearSize}
-                  className="text-xs text-gray-400 hover:text-orange-500 ml-1 flex items-center gap-1"
+                  className="text-xs flex items-center gap-1 transition-colors"
+                  style={{ color: textMuted }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                  onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
                 >
                   ✕ {isBn ? "সাফ করুন" : "Clear"}
                 </button>
               )}
             </div>
-            <p className="text-xs text-orange-500 font-medium mt-2">
+            <p className="text-xs font-medium mt-2" style={{ color: primaryColor }}>
               {product.stock || 0} {isBn ? "স্টকে আছে" : "in stock"}
             </p>
           </div>
@@ -397,24 +482,45 @@ export default function ProductDetail({ product }) {
 
         {/* Qty + Add to cart */}
         <div className="flex items-center gap-3 mb-3">
-          <div className="flex items-center border border-gray-300 rounded overflow-hidden">
+          <div className="flex items-center border rounded overflow-hidden" style={{ borderColor: borderColor }}>
             <button
               onClick={() => setQty(Math.max(1, qty - 1))}
-              className="px-3 py-2.5 bg-gray-100 hover:bg-orange-500 hover:text-white transition-colors"
+              className="px-3 py-2.5 transition-colors"
+              style={{ backgroundColor: hoverBg, color: textMuted }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = primaryColor;
+                e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = hoverBg;
+                e.currentTarget.style.color = textMuted;
+              }}
             >
               <Minus size={14} />
             </button>
-            <span className="px-5 py-2 text-sm font-semibold">{qty}</span>
+            <span className="px-5 py-2 text-sm font-semibold" style={{ color: textColor }}>{qty}</span>
             <button
               onClick={() => setQty(qty + 1)}
-              className="px-3 py-2.5 bg-gray-100 hover:bg-orange-500 hover:text-white transition-colors"
+              className="px-3 py-2.5 transition-colors"
+              style={{ backgroundColor: hoverBg, color: textMuted }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = primaryColor;
+                e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = hoverBg;
+                e.currentTarget.style.color = textMuted;
+              }}
             >
               <Plus size={14} />
             </button>
           </div>
           <button
             onClick={handleAddToCart}
-            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded transition-colors text-sm"
+            className="flex-1 text-white font-bold py-2.5 rounded transition-colors text-sm"
+            style={{ backgroundColor: primaryColor }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
           >
             {isBn ? "কার্টে যোগ করুন" : "Add To Cart"}
           </button>
@@ -423,60 +529,71 @@ export default function ProductDetail({ product }) {
         {/* Buy Now */}
         <Link
           href={'/checkout'}
-          className="w-full block text-center bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 rounded transition-colors text-sm mb-4"
+          className="w-full block text-center text-white font-bold py-2.5 rounded transition-colors text-sm mb-4"
+          style={{ backgroundColor: buttonHoverColor }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = primaryColor}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
         >
           {isBn ? "এখনই কিনুন" : "Buy Now"}
         </Link>
 
         {/* Actions */}
-        <div className="flex items-center gap-5 mb-4 text-sm text-gray-600">
+        <div className="flex items-center gap-5 mb-4 text-sm">
           <button
             onClick={() => addToWishlist(product)}
-            className="flex items-center gap-1.5 hover:text-orange-500 transition-colors"
+            className="flex items-center gap-1.5 transition-colors"
+            style={{ color: textMuted }}
+            onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+            onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
           >
             <Heart size={15} /> {isBn ? "উইশলিস্ট" : "Wishlist"}
           </button>
-          <button className="flex items-center gap-1.5 hover:text-orange-500 transition-colors">
+          <button className="flex items-center gap-1.5 transition-colors" style={{ color: textMuted }}
+            onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+            onMouseLeave={(e) => e.currentTarget.style.color = textMuted}>
             <MessageCircle size={15} /> {isBn ? "জিজ্ঞাসা করুন" : "Ask Us"}
           </button>
-          <button className="flex items-center gap-1.5 hover:text-orange-500 transition-colors">
+          <button className="flex items-center gap-1.5 transition-colors" style={{ color: textMuted }}
+            onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+            onMouseLeave={(e) => e.currentTarget.style.color = textMuted}>
             <Share2 size={15} /> {isBn ? "শেয়ার করুন" : "Share"}
           </button>
         </div>
 
         {/* Viewing info */}
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
-          <Eye size={13} className="text-orange-500" />
-          <span>{isBn ? "২১ জন এই পণ্যটি এখন দেখছেন" : "21 people are viewing this right now"}</span>
+        <div className="flex items-center gap-1.5 text-xs mb-3">
+          <Eye size={13} style={{ color: primaryColor }} />
+          <span style={{ color: textMuted }}>{isBn ? "২১ জন এই পণ্যটি এখন দেখছেন" : "21 people are viewing this right now"}</span>
         </div>
 
         {/* Delivery info */}
         <div className="flex flex-col gap-1.5 mb-4">
-          <div className="flex items-center gap-2 text-xs text-gray-600">
-            <Truck size={13} className="text-gray-500" />
+          <div className="flex items-center gap-2 text-xs" style={{ color: textMuted }}>
+            <Truck size={13} style={{ color: textMuted }} />
             <span>
-              <strong>{isBn ? "ডেলিভারি সময়:" : "Estimated Delivery:"}</strong> {isBn ? "৪ কার্যদিবস" : "Up to 4 business days"}
+              <strong style={{ color: textColor }}>{isBn ? "ডেলিভারি সময়:" : "Estimated Delivery:"}</strong> {isBn ? "৪ কার্যদিবস" : "Up to 4 business days"}
             </span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-600">
-            <RotateCcw size={13} className="text-gray-500" />
+          <div className="flex items-center gap-2 text-xs" style={{ color: textMuted }}>
+            <RotateCcw size={13} style={{ color: textMuted }} />
             <span>
-              <strong>{isBn ? "ফ্রি শিপিং ও রিটার্ন:" : "Free Shipping & Returns:"}</strong> {isBn ? "৳২০০০ এর উপরে সব অর্ডারে" : "On all orders above ৳2000"}
+              <strong style={{ color: textColor }}>{isBn ? "ফ্রি শিপিং ও রিটার্ন:" : "Free Shipping & Returns:"}</strong> {isBn ? "৳২০০০ এর উপরে সব অর্ডারে" : "On all orders above ৳2000"}
             </span>
           </div>
         </div>
 
         {/* Secure checkout */}
-        <div className="border border-gray-200 rounded p-3 bg-gray-50">
-          <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
-            <ShieldCheck size={14} className="text-green-600" />
+        <div className="border rounded p-3" style={{ borderColor: borderColor, backgroundColor: hoverBg }}>
+          <p className="text-xs font-semibold mb-2 flex items-center gap-1.5" style={{ color: textColor }}>
+            <ShieldCheck size={14} style={{ color: successColor }} />
             {isBn ? "নিরাপদ চেকআউট নিশ্চিত" : "Guaranteed Safe And Secure Checkout"}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             {["VISA", "MC", "AMEX", "PAYPAL", "BKASH"].map((card) => (
               <span
                 key={card}
-                className="border border-gray-300 rounded px-2 py-0.5 text-[10px] font-bold text-gray-600 bg-white"
+                className="border rounded px-2 py-0.5 text-[10px] font-bold"
+                style={{ borderColor: borderColor, color: textMuted, backgroundColor: cardBg }}
               >
                 {card}
               </span>
@@ -487,68 +604,116 @@ export default function ProductDetail({ product }) {
 
       {/* Product Details Table */}
       <div className="w-full lg:w-[300px]">
-        <table className="w-full text-left text-sm text-gray-600 border border-gray-100 shadow-sm rounded">
+        <table className="w-full text-left text-sm border shadow-sm rounded" style={{ borderColor: borderColor }}>
           <tbody>
-            <tr className="bg-gradient-to-r from-orange-500 to-[#d4382c]">
+            <tr style={{ background: `linear-gradient(135deg, ${primaryColor}, ${buttonHoverColor})` }}>
               <th className="py-2 px-3 text-white font-bold">{isBn ? "বৈশিষ্ট্য" : "Attribute"}</th>
               <th className="py-2 px-3 text-white font-bold">{isBn ? "মান" : "Value"}</th>
             </tr>
-            <tr className="border-t border-gray-100">
-              <th className="py-2 px-3 font-medium text-gray-800">{isBn ? "নাম" : "Name"}</th>
-              <td className="py-2 px-3">{isBn ? (product.nameBn || product.name) : product.name}</td>
+            <tr className="border-t" style={{ borderTopColor: borderColor }}>
+              <th className="py-2 px-3 font-medium" style={{ color: textColor }}>{isBn ? "নাম" : "Name"}</th>
+              <td className="py-2 px-3" style={{ color: textMuted }}>{isBn ? (product.nameBn || product.name) : product.name}</td>
             </tr>
-            <tr className="border-t border-gray-100">
-              <th className="py-2 px-3 font-medium text-gray-800">{isBn ? "ব্র্যান্ড" : "Brand"}</th>
-              <td className="py-2 px-3">{product.brandName || "Creative"}</td>
+            <tr className="border-t" style={{ borderTopColor: borderColor }}>
+              <th className="py-2 px-3 font-medium" style={{ color: textColor }}>{isBn ? "ব্র্যান্ড" : "Brand"}</th>
+              <td className="py-2 px-3">
+                <Link href={`/brands/${product.brandSlug}`} className="transition-colors" style={{ color: primaryColor }} onMouseEnter={(e) => e.currentTarget.style.color = buttonHoverColor} onMouseLeave={(e) => e.currentTarget.style.color = primaryColor}>
+                  {product.brandName || "Creative"}
+                </Link>
+              </td>
             </tr>
-            <tr className="border-t border-gray-100">
-              <th className="py-2 px-3 font-medium text-gray-800">{isBn ? "ক্যাটাগরি" : "Category"}</th>
-              <td className="py-2 px-3">{product.categoryName || "Uncategorized"}</td>
+            <tr className="border-t" style={{ borderTopColor: borderColor }}>
+              <th className="py-2 px-3 font-medium" style={{ color: textColor }}>{isBn ? "ক্যাটাগরি" : "Category"}</th>
+              <td className="py-2 px-3">
+                {product.categoryId && product.categoryName && (
+                  <div className="flex flex-col gap-1">
+                    <Link
+                      href={`/categories/${product.categorySlug}`}
+                      className="transition-colors duration-200 text-sm font-medium"
+                      style={{ color: primaryColor }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = buttonHoverColor}
+                      onMouseLeave={(e) => e.currentTarget.style.color = primaryColor}
+                    >
+                      {isBn ? (product.categoryNameBn || product.categoryName) : product.categoryName}
+                    </Link>
+                    {product.subCategoryId && product.subCategoryName && (
+                      <div className="flex items-center gap-1 text-xs" style={{ color: textMuted }}>
+                        <span>→</span>
+                        <Link
+                          href={`/categories/${product.categorySlug}/${product.subCategorySlug}`}
+                          className="transition-colors duration-200"
+                          style={{ color: primaryColor }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = buttonHoverColor}
+                          onMouseLeave={(e) => e.currentTarget.style.color = primaryColor}
+                        >
+                          {isBn ? (product.subCategoryNameBn || product.subCategoryName) : product.subCategoryName}
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!product.categoryId && product.subCategoryId && product.subCategoryName && (
+                  <Link
+                    href={`/subcategories/${product.subCategorySlug}`}
+                    className="transition-colors duration-200 text-sm"
+                    style={{ color: primaryColor }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = buttonHoverColor}
+                    onMouseLeave={(e) => e.currentTarget.style.color = primaryColor}
+                  >
+                    {isBn ? (product.subCategoryNameBn || product.subCategoryName) : product.subCategoryName}
+                  </Link>
+                )}
+                {!product.categoryId && !product.subCategoryId && (
+                  <span className="text-sm" style={{ color: textMuted }}>
+                    {isBn ? 'কোন শ্রেণী নেই' : 'Uncategorized'}
+                  </span>
+                )}
+              </td>
             </tr>
             {product.colorNames && product.colorNames[selectedColorIndex] && (
-              <tr className="border-t border-gray-100">
-                <th className="py-2 px-3 font-medium text-gray-800">{isBn ? "রঙ" : "Color"}</th>
+              <tr className="border-t" style={{ borderTopColor: borderColor }}>
+                <th className="py-2 px-3 font-medium" style={{ color: textColor }}>{isBn ? "রঙ" : "Color"}</th>
                 <td className="py-2 px-3">
                   <div className="flex items-center gap-2">
                     <div
                       className="w-4 h-4 rounded-full border"
-                      style={{ backgroundColor: getSelectedColorHex() }}
+                      style={{ backgroundColor: getSelectedColorHex(), borderColor: borderColor }}
                     />
-                    {getSelectedColorName()}
+                    <span style={{ color: textMuted }}>{getSelectedColorName()}</span>
                   </div>
                 </td>
               </tr>
             )}
             {selectedSize && (
-              <tr className="border-t border-gray-100">
-                <th className="py-2 px-3 font-medium text-gray-800">{isBn ? "সাইজ" : "Size"}</th>
-                <td className="py-2 px-3">{selectedSize}</td>
+              <tr className="border-t" style={{ borderTopColor: borderColor }}>
+                <th className="py-2 px-3 font-medium" style={{ color: textColor }}>{isBn ? "সাইজ" : "Size"}</th>
+                <td className="py-2 px-3" style={{ color: textMuted }}>{selectedSize}</td>
               </tr>
             )}
-            <tr className="border-t border-gray-100">
-              <th className="py-2 px-3 font-medium text-gray-800">{isBn ? "দাম" : "Price"}</th>
-              <td className="py-2 px-3">{taka(product.price)}</td>
+            <tr className="border-t" style={{ borderTopColor: borderColor }}>
+              <th className="py-2 px-3 font-medium" style={{ color: textColor }}>{isBn ? "দাম" : "Price"}</th>
+              <td className="py-2 px-3" style={{ color: primaryColor }}>{taka(product.price)}</td>
             </tr>
-            <tr className="border-t border-gray-100">
-              <th className="py-2 px-3 font-medium text-gray-800">{isBn ? "স্টক" : "Stock"}</th>
-              <td className="py-2 px-3">{product.stock || 0} {isBn ? "আইটেম" : "items"}</td>
+            <tr className="border-t" style={{ borderTopColor: borderColor }}>
+              <th className="py-2 px-3 font-medium" style={{ color: textColor }}>{isBn ? "স্টক" : "Stock"}</th>
+              <td className="py-2 px-3" style={{ color: textMuted }}>{product.stock || 0} {isBn ? "আইটেম" : "items"}</td>
             </tr>
-            <tr className="border-t border-gray-100">
-              <th className="py-2 px-3 font-medium text-gray-800">{isBn ? "রেটিং" : "Rating"}</th>
+            <tr className="border-t" style={{ borderTopColor: borderColor }}>
+              <th className="py-2 px-3 font-medium" style={{ color: textColor }}>{isBn ? "রেটিং" : "Rating"}</th>
               <td className="py-2 px-3">
                 <StarRating rating={product.rating || 4} />
               </td>
             </tr>
             {product.section && product.section !== "none" && (
-              <tr className="border-t border-gray-100">
-                <th className="py-2 px-3 font-medium text-gray-800">{isBn ? "সেকশন" : "Section"}</th>
-                <td className="py-2 px-3 capitalize">{product.section.replace("-", " ")}</td>
+              <tr className="border-t" style={{ borderTopColor: borderColor }}>
+                <th className="py-2 px-3 font-medium" style={{ color: textColor }}>{isBn ? "সেকশন" : "Section"}</th>
+                <td className="py-2 px-3 capitalize" style={{ color: textMuted }}>{product.section.replace("-", " ")}</td>
               </tr>
             )}
             {product.productType && (
-              <tr className="border-t border-gray-100">
-                <th className="py-2 px-3 font-medium text-gray-800">{isBn ? "টাইপ" : "Type"}</th>
-                <td className="py-2 px-3 capitalize">{product.productType}</td>
+              <tr className="border-t" style={{ borderTopColor: borderColor }}>
+                <th className="py-2 px-3 font-medium" style={{ color: textColor }}>{isBn ? "টাইপ" : "Type"}</th>
+                <td className="py-2 px-3 capitalize" style={{ color: textMuted }}>{product.productType}</td>
               </tr>
             )}
           </tbody>

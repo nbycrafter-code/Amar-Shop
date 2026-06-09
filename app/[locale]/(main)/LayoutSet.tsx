@@ -46,6 +46,8 @@ export default function LayoutSet({ children, session, settings, categories }) {
         onWishlistClick={() => setIsWishlistOpen(true)}
       />
       <Navbar
+        session={session}
+        settings={settings}
         categories={categories}
         openCart={() => setDrawerOpen(true)}
         wishlistCount={wishlist.length}
@@ -53,16 +55,16 @@ export default function LayoutSet({ children, session, settings, categories }) {
         compareCount={compareList.length}
         onCompareClick={() => setIsCompareOpen(true)}
       />
-      <CartDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <CartDrawer settings={settings} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
       <main>
         {pathname.split("/").includes("my-account") ? (
           <>
-            <AccountBreadcrumb />
+            <AccountBreadcrumb settings={settings} />
             <section className="py-8 md:py-12">
               <div className="container mx-auto w-full px-4">
                 <div className="flex flex-col md:flex-row md:gap-8 lg:gap-10">
-                  <AccountSidebar user={session?.user} />
+                  <AccountSidebar settings={settings} user={session?.user} />
                   <main className="min-w-0 flex-1">
                     {children}
                   </main>
@@ -77,6 +79,7 @@ export default function LayoutSet({ children, session, settings, categories }) {
 
       {isWishlistOpen && (
         <WishlistModal
+          settings={settings}
           wishlist={wishlist}
           onClose={() => setIsWishlistOpen(false)}
           onRemove={removeFromWishlist}
@@ -85,6 +88,7 @@ export default function LayoutSet({ children, session, settings, categories }) {
 
       {isCompareOpen && (
         <CompareModal
+          settings={settings}
           compareList={compareList}
           onClose={() => setIsCompareOpen(false)}
           onRemove={removeFromCompare}
@@ -94,6 +98,7 @@ export default function LayoutSet({ children, session, settings, categories }) {
 
       {isQuickViewOpen && (
         <QuickViewModal
+          settings={settings}
           onClose={() => setIsQuickViewOpen(false)}
           activeProduct={activeProduct}
         />

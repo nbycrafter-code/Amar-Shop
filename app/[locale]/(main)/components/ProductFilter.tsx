@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Star, SlidersHorizontal, X } from "lucide-react";
 import { PriceRangeSlider } from "./PriceRangeSlider";
-import { useLanguage } from "@/context/LanguageContext"; // ✅ যোগ করুন
+import { useLanguage } from "@/context/LanguageContext";
 
 // ========== TYPES ==========
 interface Category { _id?: string; id?: string; name: string; nameBn?: string; }
@@ -31,6 +31,7 @@ interface ProductFilterProps {
   colors: Color[];
   onFilterChange: (filters: Filters) => void;
   initialFilters?: Filters;
+  settings?: any; // settings prop যোগ করা হলো
 }
 
 // ========== MAIN COMPONENT ==========
@@ -41,8 +42,19 @@ export const ProductFilter = ({
   colors,
   onFilterChange,
   initialFilters,
+  settings = {},
 }: ProductFilterProps) => {
-  const { language } = useLanguage(); // ✅ যোগ করুন
+  const { language } = useLanguage();
+
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#d94535";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const cardBg = settings?.cardBackground || "#FFFFFF";
+  const hoverBg = settings?.hoverBackground || "#F3F4F6";
+  const ratingColor = "#FBBF24";
 
   const [openSections, setOpenSections] = useState({
     categories: true,
@@ -187,9 +199,10 @@ export const ProductFilter = ({
       onClick={() => onSelect(selected === rating ? null : rating)}
       className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 transition-all ${
         selected === rating
-          ? "bg-red-500 text-white"
-          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          ? "text-white"
+          : "text-gray-700 hover:bg-gray-200"
       }`}
+      style={selected === rating ? { backgroundColor: primaryColor } : { backgroundColor: hoverBg }}
     >
       <div className="flex">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -225,16 +238,20 @@ export const ProductFilter = ({
       {filterSections.map((section) => (
         <div
           key={section.id}
-          className="overflow-hidden rounded-lg border border-gray-200 bg-white transition-shadow hover:shadow-md"
+          className="overflow-hidden rounded-lg border transition-shadow hover:shadow-md"
+          style={{ backgroundColor: cardBg, borderColor: borderColor }}
         >
           <button
             onClick={() => toggleSection(section.id)}
-            className="group flex w-full items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+            className="group flex w-full items-center justify-between px-4 py-3 transition-colors"
+            style={{ backgroundColor: cardBg }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = cardBg}
           >
-            <h3 className="font-semibold text-gray-700 group-hover:text-red-500 transition-colors text-sm">
+            <h3 className="font-semibold text-sm transition-colors group-hover:text-red-500" style={{ color: textMuted }}>
               {section.title}
             </h3>
-            <span className="text-gray-400 group-hover:text-red-500 transition-colors">
+            <span className="transition-colors group-hover:text-red-500" style={{ color: textMuted }}>
               {openSections[section.id] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </span>
           </button>
@@ -246,15 +263,18 @@ export const ProductFilter = ({
                 {section.options.map((option, i) => (
                   <label
                     key={getOptionKey(option, i)}
-                    className="group flex cursor-pointer items-center gap-2 hover:text-red-500 transition-colors"
+                    className="group flex cursor-pointer items-center gap-2 transition-colors"
+                    onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                    onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
                   >
                     <input
                       type="checkbox"
                       checked={(selectedFilters[section.id] as string[])?.includes(getOptionValue(option))}
                       onChange={() => handleMultiSelect(section.id, getOptionValue(option))}
-                      className="cursor-pointer rounded border-gray-300 text-red-500 focus:ring-red-500 focus:ring-offset-0"
+                      className="cursor-pointer rounded border-gray-300 focus:ring-2 focus:ring-offset-0"
+                      style={{ color: primaryColor }}
                     />
-                    <span className="text-sm text-gray-600 group-hover:text-red-500 transition-colors">
+                    <span className="text-sm transition-colors group-hover:text-red-500" style={{ color: textMuted }}>
                       {getOptionLabel(option)}
                     </span>
                   </label>
@@ -277,12 +297,15 @@ export const ProductFilter = ({
                       <div
                         className={`h-6 w-6 rounded-full shadow-md transition-all duration-200 group-hover:scale-110 ${
                           selectedFilters.colors?.includes(getOptionValue(color))
-                            ? "scale-110 ring-2 ring-red-500 ring-offset-2"
-                            : "ring-1 ring-gray-200"
+                            ? "scale-110 ring-2 ring-offset-2"
+                            : "ring-1"
                         }`}
-                        style={{ backgroundColor: colorHex }}
+                        style={{
+                          backgroundColor: colorHex,
+                          ringColor: selectedFilters.colors?.includes(getOptionValue(color)) ? primaryColor : borderColor
+                        }}
                       />
-                      <span className="text-[10px] text-gray-500 group-hover:text-red-500 transition-colors">
+                      <span className="text-[10px] transition-colors group-hover:text-red-500" style={{ color: textMuted }}>
                         {colorName}
                       </span>
                     </button>
@@ -305,6 +328,7 @@ export const ProductFilter = ({
                   minGap={1}
                   currency="৳"
                   isBn={language === 'bn'}
+                  settings={settings}
                 />
               </div>
             )}
@@ -328,23 +352,23 @@ export const ProductFilter = ({
 
       {/* Applied Filters */}
       {activeCount > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h3 className="mb-3 font-semibold text-gray-700 text-sm">{getAppliedFiltersText()}</h3>
+        <div className="rounded-lg border p-4" style={{ backgroundColor: cardBg, borderColor: borderColor }}>
+          <h3 className="mb-3 font-semibold text-sm" style={{ color: textMuted }}>{getAppliedFiltersText()}</h3>
           <div className="flex flex-wrap gap-2">
             {selectedFilters.categories.map((cat) => (
-              <Tag key={cat} label={cat} onRemove={() => handleMultiSelect("categories", cat)} />
+              <Tag key={cat} label={cat} onRemove={() => handleMultiSelect("categories", cat)} primaryColor={primaryColor} />
             ))}
             {selectedFilters.brands.map((b) => (
-              <Tag key={b} label={b} onRemove={() => handleMultiSelect("brands", b)} />
+              <Tag key={b} label={b} onRemove={() => handleMultiSelect("brands", b)} primaryColor={primaryColor} />
             ))}
             {selectedFilters.sizes.map((s) => (
-              <Tag key={s} label={s} onRemove={() => handleMultiSelect("sizes", s)} />
+              <Tag key={s} label={s} onRemove={() => handleMultiSelect("sizes", s)} primaryColor={primaryColor} />
             ))}
             {selectedFilters.colors.map((c) => (
-              <Tag key={c} label={c} onRemove={() => handleMultiSelect("colors", c)} />
+              <Tag key={c} label={c} onRemove={() => handleMultiSelect("colors", c)} primaryColor={primaryColor} />
             ))}
             {selectedFilters.rating !== null && (
-              <Tag label={`${selectedFilters.rating}★ ${getRatingUpText()}`} onRemove={() => handleRatingSelect(null)} />
+              <Tag label={`${selectedFilters.rating}★ ${getRatingUpText()}`} onRemove={() => handleRatingSelect(null)} primaryColor={primaryColor} />
             )}
             {(selectedFilters.priceRange.min > 0 || selectedFilters.priceRange.max < 10000) && (
               <Tag
@@ -352,6 +376,7 @@ export const ProductFilter = ({
                 onRemove={() =>
                   setSelectedFilters((prev) => ({ ...prev, priceRange: { min: 0, max: 10000 } }))
                 }
+                primaryColor={primaryColor}
               />
             )}
           </div>
@@ -361,7 +386,16 @@ export const ProductFilter = ({
       {/* Clear All */}
       <button
         onClick={clearAllFilters}
-        className="w-full rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-700 transition-all duration-300 hover:scale-[1.02] hover:bg-red-500 hover:text-white active:scale-95"
+        className="w-full rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 hover:scale-[1.02] active:scale-95"
+        style={{ backgroundColor: hoverBg, color: textMuted }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = primaryColor;
+          e.currentTarget.style.color = '#FFFFFF';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = hoverBg;
+          e.currentTarget.style.color = textMuted;
+        }}
       >
         {getClearAllText()}
       </button>
@@ -379,12 +413,21 @@ export const ProductFilter = ({
       <div className="lg:hidden">
         <button
           onClick={() => setDrawerOpen(true)}
-          className="flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:border-red-500 hover:text-red-500 transition-all"
+          className="flex items-center gap-2 rounded-full border bg-white px-4 py-2 text-sm font-medium shadow-sm transition-all"
+          style={{ borderColor: borderColor, color: textMuted }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = primaryColor;
+            e.currentTarget.style.color = primaryColor;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = borderColor;
+            e.currentTarget.style.color = textMuted;
+          }}
         >
           <SlidersHorizontal size={16} />
           {getFiltersText()}
           {activeCount > 0 && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ backgroundColor: primaryColor }}>
               {activeCount}
             </span>
           )}
@@ -402,24 +445,33 @@ export const ProductFilter = ({
 
           {/* Drawer Panel — slides up from bottom */}
           <div
-            className="absolute bottom-0 left-0 right-0 flex max-h-[90dvh] flex-col rounded-t-2xl bg-gray-50 shadow-2xl"
-            style={{ animation: "slideUp 0.28s ease-out" }}
+            className="absolute bottom-0 left-0 right-0 flex max-h-[90dvh] flex-col rounded-t-2xl shadow-2xl"
+            style={{ backgroundColor: hoverBg, animation: "slideUp 0.28s ease-out" }}
           >
             {/* Handle + Header */}
-            <div className="flex-shrink-0 rounded-t-2xl bg-white px-4 pb-3 pt-3 shadow-sm">
-              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300" />
+            <div className="flex-shrink-0 rounded-t-2xl px-4 pb-3 pt-3 shadow-sm" style={{ backgroundColor: cardBg }}>
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full" style={{ backgroundColor: borderColor }} />
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-gray-800">
+                <h2 className="text-base font-bold" style={{ color: textColor }}>
                   {getFiltersText()}
                   {activeCount > 0 && (
-                    <span className="ml-2 rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
+                    <span className="ml-2 rounded-full px-2 py-0.5 text-xs font-bold text-white" style={{ backgroundColor: primaryColor }}>
                       {activeCount}
                     </span>
                   )}
                 </h2>
                 <button
                   onClick={() => setDrawerOpen(false)}
-                  className="rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
+                  className="rounded-full p-1.5 transition-colors"
+                  style={{ color: textMuted }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = hoverBg;
+                    e.currentTarget.style.color = textColor;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = textMuted;
+                  }}
                 >
                   <X size={18} />
                 </button>
@@ -432,10 +484,13 @@ export const ProductFilter = ({
             </div>
 
             {/* Sticky footer */}
-            <div className="flex-shrink-0 border-t border-gray-200 bg-white px-4 py-3">
+            <div className="flex-shrink-0 border-t px-4 py-3" style={{ borderTopColor: borderColor, backgroundColor: cardBg }}>
               <button
                 onClick={() => setDrawerOpen(false)}
-                className="w-full rounded-xl bg-[#ef553f] py-3 text-sm font-semibold text-white shadow hover:bg-[#d94535] transition-colors active:scale-[0.98]"
+                className="w-full rounded-xl py-3 text-sm font-semibold text-white shadow transition-colors active:scale-[0.98]"
+                style={{ backgroundColor: primaryColor }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
               >
                 {getShowResultsText()}
               </button>
@@ -455,9 +510,9 @@ export const ProductFilter = ({
 };
 
 // ── Tiny tag component ──
-const Tag = ({ label, onRemove }: { label: string; onRemove: () => void }) => (
-  <span className="inline-flex items-center gap-1 rounded bg-red-50 px-2 py-1 text-xs text-red-600">
+const Tag = ({ label, onRemove, primaryColor }: { label: string; onRemove: () => void; primaryColor: string }) => (
+  <span className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs" style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}>
     {label}
-    <button onClick={onRemove} className="hover:text-red-800 font-bold">×</button>
+    <button onClick={onRemove} className="font-bold hover:opacity-80">×</button>
   </span>
 );

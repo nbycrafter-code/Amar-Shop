@@ -12,8 +12,8 @@ function generateOTP() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, email, password } = body;
-
+    const { name, email, password, language } = body;
+    
     if (!name || !email || !password) {
       return NextResponse.json(
         { error: "All fields are required" },
@@ -49,7 +49,7 @@ export async function POST(request) {
         existingUser.verificationToken = encodeURIComponent(encryptedToken);
         await existingUser.save();
 
-        const verificationUrl = `/verify-email?token=${encodeURIComponent(encryptedToken)}`;
+        const verificationUrl = language === 'bn' ? `/bn/verify-email?token=${encodeURIComponent(encryptedToken)}` : `/verify-email?token=${encodeURIComponent(encryptedToken)}`;
         await sendVerificationEmail(existingUser.email, otp, existingUser.name, `${process.env.NEXTAUTH_URL}${verificationUrl}`);
 
         return NextResponse.json({
@@ -85,7 +85,7 @@ export async function POST(request) {
       verificationToken: encryptedToken,
     });
 
-    const verificationUrl = `/verify-email?token=${encodeURIComponent(encryptedToken)}`;
+    const verificationUrl = language === 'bn' ? `/bn/verify-email?token=${encodeURIComponent(encryptedToken)}` : `/verify-email?token=${encodeURIComponent(encryptedToken)}`;
     await sendVerificationEmail(user.email, otp, user.name, `${process.env.NEXTAUTH_URL}${verificationUrl}`);
 
     return NextResponse.json({

@@ -7,6 +7,8 @@ import { ProductFilter } from "../../../components/ProductFilter";
 import { Breadcrumb } from "../../../components/Breadcrumb";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { CategoryContent } from "../components/CategoryContent";
+import Image from "next/image";
 
 interface PageSetProps {
   products: any[];
@@ -14,7 +16,7 @@ interface PageSetProps {
   brands?: any[];
   sizes?: any[];
   colors?: any[];
-  categoryData?: any;
+  subCategoryData?: any;
 }
 
 export const PageSet = ({
@@ -22,7 +24,7 @@ export const PageSet = ({
   brands = [],
   sizes = [],
   colors = [],
-  categoryData,
+  subCategoryData,
   products = [],
 }: PageSetProps) => {
   const { language } = useLanguage();
@@ -31,13 +33,13 @@ export const PageSet = ({
   const { category: categorySlug } = useParams();
 
   const currentCategory = useMemo(() => {
-    if (categoryData) return categoryData;
+    if (subCategoryData) return subCategoryData;
     if (!categorySlug || !categories.length) return null;
     return categories.find(
       (cat) =>
         cat.slug?.toLowerCase() === String(categorySlug).toLowerCase()
     );
-  }, [categorySlug, categories, categoryData]);
+  }, [categorySlug, categories, subCategoryData]);
 
   const [filters, setFilters] = useState({
     categories: [] as string[],
@@ -68,10 +70,10 @@ export const PageSet = ({
     topRated: isBn ? "সর্বোচ্চ রেটেড" : "Top Rated",
     newestFirst: isBn ? "সর্বশেষ প্রথমে" : "Newest First",
     noProductsFound: isBn ? "কোন পণ্য পাওয়া যায়নি" : "No Products Found",
-    noProductsInCategory: (name: string) => isBn 
+    noProductsInCategory: (name: string) => isBn
       ? `${name} ক্যাটাগরিতে কোন পণ্য নেই`
       : `No products found in ${name} category`,
-    noMatchFilters: isBn 
+    noMatchFilters: isBn
       ? "আপনার নির্বাচিত ফিল্টারের সাথে মিলে এমন কোন পণ্য নেই"
       : "No products match your selected filters",
     clearAllFilters: isBn ? "সব ফিল্টার সরান" : "Clear All Filters",
@@ -212,7 +214,7 @@ export const PageSet = ({
 
   const formatCategoryName = (): string => {
     if (currentCategory) {
-      return isBn 
+      return isBn
         ? (currentCategory.nameBn || currentCategory.name)
         : (currentCategory.name || currentCategory.nameBn);
     }
@@ -262,6 +264,35 @@ export const PageSet = ({
 
           {/* Main Content */}
           <div>
+            {/* Banner */}
+            {subCategoryData?.bannerImage ? (
+              <div className="bg-white rounded-lg p-2 mb-6 shadow-sm">
+                <div className="w-full overflow-hidden rounded-lg">
+                  <Image
+                    src={subCategoryData.bannerImage}
+                    alt={language === 'bn' ? "ক্যাটাগরি ব্যানার" : "Category Banner"}
+                    width={1200}
+                    height={400}
+                    className="w-full h-auto object-contain"
+                    priority={false}
+                    unoptimized={subCategoryData.bannerImage.startsWith('/uploads/')}
+                  />
+                </div>
+              </div>
+            ) : (
+              <></>
+              // <div className="bg-white rounded-lg p-2 mb-6 shadow-sm">
+              // <div className="w-full bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-8 text-center">
+              //   <div className="flex flex-col items-center justify-center gap-2">
+              //     <ImageIcon className="w-12 h-12 text-purple-300" />
+              //     <p className="text-sm text-purple-400">
+              //       {language === 'bn' ? "কোন ব্যানার ইমেজ নেই" : "No banner image available"}
+              //     </p>
+              //   </div>
+              // </div>
+              // </div>
+            )}
+
             {/* Toolbar */}
             <div className="bg-white rounded-lg p-4 mb-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
               <div>
@@ -309,11 +340,10 @@ export const PageSet = ({
                     <button
                       onClick={() => goToPage(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                        currentPage === 1
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
-                      }`}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${currentPage === 1
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
+                        }`}
                     >
                       <ChevronLeft size={18} />
                     </button>
@@ -335,11 +365,10 @@ export const PageSet = ({
                           <button
                             key={pageNum}
                             onClick={() => goToPage(pageNum)}
-                            className={`w-10 h-10 rounded-lg transition-all ${
-                              currentPage === pageNum
-                                ? "bg-red-500 text-white shadow-md"
-                                : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
-                            }`}
+                            className={`w-10 h-10 rounded-lg transition-all ${currentPage === pageNum
+                              ? "bg-red-500 text-white shadow-md"
+                              : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
+                              }`}
                           >
                             {pageNum}
                           </button>
@@ -350,11 +379,10 @@ export const PageSet = ({
                     <button
                       onClick={() => goToPage(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                        currentPage === totalPages
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
-                      }`}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${currentPage === totalPages
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
+                        }`}
                     >
                       <ChevronRight size={18} />
                     </button>
@@ -384,23 +412,29 @@ export const PageSet = ({
                   <p className="text-gray-500 mb-4">
                     {getEmptyMessage()}
                   </p>
-                  {(filters.categories.length > 0 || 
-                    filters.brands.length > 0 || 
-                    filters.colors.length > 0 || 
-                    filters.sizes.length > 0 || 
-                    filters.priceRange.min > 0 || 
-                    filters.priceRange.max < 7000 || 
+                  {(filters.categories.length > 0 ||
+                    filters.brands.length > 0 ||
+                    filters.colors.length > 0 ||
+                    filters.sizes.length > 0 ||
+                    filters.priceRange.min > 0 ||
+                    filters.priceRange.max < 7000 ||
                     filters.rating) && (
-                    <button
-                      onClick={clearAllFilters}
-                      className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                    >
-                      {texts.clearAllFilters}
-                    </button>
-                  )}
+                      <button
+                        onClick={clearAllFilters}
+                        className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      >
+                        {texts.clearAllFilters}
+                      </button>
+                    )}
                 </div>
               </div>
             )}
+
+
+            {/* Category Content */}
+            <div className="bg-white rounded-lg p-4 mb-6 shadow-sm mt-16">
+              <CategoryContent category={subCategoryData} />
+            </div>
           </div>
         </div>
       </div>

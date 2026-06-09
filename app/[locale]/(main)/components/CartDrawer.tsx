@@ -3,12 +3,28 @@ import { Truck, X, ShoppingBag, Trash2, Plus, Minus } from "lucide-react";
 import Link from "next/link";
 import { taka } from "@/utils/currency";
 import { useApp } from "../context/AppContext";
-import { useLanguage } from "@/context/LanguageContext"; // ✅ যোগ করুন
+import { useLanguage } from "@/context/LanguageContext";
 
-export const CartDrawer = ({ open, onClose }) => {
+interface CartDrawerProps {
+  open: boolean;
+  onClose: () => void;
+  settings?: any; // settings prop যোগ করা হলো
+}
+
+export const CartDrawer = ({ open, onClose, settings = {} }: CartDrawerProps) => {
   const { cart, removeFromCart, updateQuantity } = useApp();
-  const { language } = useLanguage(); // ✅ যোগ করুন
+  const { language } = useLanguage();
   const isBn = language === 'bn';
+
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#d43f2a";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const backgroundColor = settings?.backgroundColor || "#FFFFFF";
+  const hoverBg = settings?.hoverBackground || "#F3F4F6";
+  const priceColor = settings?.primaryColor || "#ef553f";
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -18,12 +34,10 @@ export const CartDrawer = ({ open, onClose }) => {
     }
   };
 
-  // Helper function to get product name based on language
   const getProductName = (item) => {
     return isBn ? (item.nameBn || item.name) : item.name;
   };
 
-  // Text translations
   const texts = {
     shoppingCart: isBn ? "শপিং কার্ট" : "Shopping Cart",
     yourCartIsEmpty: isBn ? "আপনার কার্ট খালি" : "Your cart is empty",
@@ -42,19 +56,29 @@ export const CartDrawer = ({ open, onClose }) => {
       />
 
       {/* Drawer */}
-      <aside className={`absolute right-0 top-0 h-full w-full max-w-[380px] bg-white shadow-2xl transition-transform duration-300 flex flex-col ${open ? "translate-x-0" : "translate-x-full"}`}>
+      <aside className={`absolute right-0 top-0 h-full w-full max-w-[380px] shadow-2xl transition-transform duration-300 flex flex-col ${open ? "translate-x-0" : "translate-x-full"}`}
+        style={{ backgroundColor: backgroundColor }}>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 p-5 bg-white sticky top-0 z-10">
+        <div className="flex items-center justify-between border-b p-5 sticky top-0 z-10" style={{ borderBottomColor: borderColor, backgroundColor: backgroundColor }}>
           <div className="flex items-center gap-2">
-            <ShoppingBag size={20} className="text-[#ef553f]" />
-            <h2 className="text-xl font-bold">{texts.shoppingCart}</h2>
-            <span className="bg-gray-100 text-gray-600 text-sm px-2 py-0.5 rounded-full">
+            <ShoppingBag size={20} style={{ color: primaryColor }} />
+            <h2 className="text-xl font-bold" style={{ color: textColor }}>{texts.shoppingCart}</h2>
+            <span className="text-sm px-2 py-0.5 rounded-full" style={{ backgroundColor: hoverBg, color: textMuted }}>
               {cart.length}
             </span>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 rounded-full transition-colors"
+            style={{ color: textMuted }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = hoverBg;
+              e.currentTarget.style.color = textColor;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = textMuted;
+            }}
           >
             <X size={20} />
           </button>
@@ -62,24 +86,17 @@ export const CartDrawer = ({ open, onClose }) => {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-3">
-          {/* Free Shipping Banner - Commented but kept for future use */}
-          {/* <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center mb-5">
-            <Truck className="mx-auto mb-2 h-5 w-5 text-green-600" />
-            <p className="text-sm text-green-700 font-medium">
-              Congratulations! Your order is eligible for FREE Delivery.
-            </p>
-          </div> */}
-
           {/* Cart Items */}
           {cart.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <ShoppingBag size={40} className="text-gray-400" />
+              <div className="w-24 h-24 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: hoverBg }}>
+                <ShoppingBag size={40} style={{ color: textMuted }} />
               </div>
-              <p className="text-gray-500 mb-4">{texts.yourCartIsEmpty}</p>
+              <p className="mb-4" style={{ color: textMuted }}>{texts.yourCartIsEmpty}</p>
               <button
                 onClick={onClose}
-                className="text-[#ef553f] font-medium hover:underline"
+                className="font-medium hover:underline"
+                style={{ color: primaryColor }}
               >
                 {texts.continueShopping}
               </button>
@@ -87,12 +104,14 @@ export const CartDrawer = ({ open, onClose }) => {
           ) : (
             <div className="space-y-2">
               {cart.map((item) => (
-                <div key={item._id} className="flex gap-4 bg-white border border-gray-100 rounded-lg p-2 hover:shadow-md transition-shadow">
+                <div key={item._id} className="flex gap-4 border rounded-lg p-2 hover:shadow-md transition-shadow" 
+                  style={{ backgroundColor: backgroundColor, borderColor: borderColor }}>
                   {/* Product Image */}
                   <img
                     src={item.image}
                     alt={getProductName(item)}
-                    className="h-16 w-16 rounded-lg border border-gray-200 object-cover"
+                    className="h-16 w-16 rounded-lg border object-cover" 
+                    style={{ borderColor: borderColor }}
                   />
 
                   {/* Product Details */}
@@ -100,43 +119,44 @@ export const CartDrawer = ({ open, onClose }) => {
                     <Link
                       href={`/product/${item._id}`}
                       onClick={onClose}
-                      className="font-medium text-gray-800 mb-1 line-clamp-2 text-sm hover:text-[#ef553f] transition-colors"
+                      className="font-medium mb-1 line-clamp-2 text-sm transition-colors"
+                      style={{ color: textColor }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                      onMouseLeave={(e) => e.currentTarget.style.color = textColor}
                     >
                       {getProductName(item)}
                     </Link>
-                    <p className="text-[#ef553f] font-bold text-md">
+                    <p className="font-bold text-md" style={{ color: priceColor }}>
                       {taka(item.price)}
-                      <span className="text-[12px] text-gray-400 font-normal ml-1">
+                      <span className="text-[12px] font-normal ml-1" style={{ color: textMuted }}>
                         x {item.quantity}
                       </span>
                     </p>
 
                     <div className="flex gap-2">
-                      {/* Show Selected Color if exists */}
                       {(item.selectedColor || item.selectedColorBn) && (
                         <div className="flex items-center gap-1 mt-0.5">
-                          <span className="text-[10px] text-gray-500 font-semibold">
+                          <span className="text-[10px] font-semibold" style={{ color: textMuted }}>
                             {isBn ? "রঙ:" : "Color:"}
                           </span>
                           {item.selectedColorHex && (
                             <div
-                              className="w-3 h-3 rounded-full border border-gray-300"
-                              style={{ backgroundColor: item.selectedColorHex }}
+                              className="w-3 h-3 rounded-full border"
+                              style={{ backgroundColor: item.selectedColorHex, borderColor: borderColor }}
                             />
                           )}
-                          <span className="text-[10px] text-gray-400">
+                          <span className="text-[10px]" style={{ color: textMuted }}>
                             {isBn ? (item.selectedColorBn || item.selectedColor) : (item.selectedColor || item.selectedColorBn)}
                           </span>
                         </div>
                       )}
 
-                      {/* Show Selected Size if exists */}
                       {(item.selectedSize || item.selectedSizeBn) && (
                         <div className="flex items-center gap-1 mt-0.5">
-                          <span className="text-[10px] text-gray-400">
-                            <span className="text-[10px] text-gray-500 font-semibold">
-                              {isBn ? "সাইজ:" : "Size:"}
-                            </span>
+                          <span className="text-[10px] font-semibold" style={{ color: textMuted }}>
+                            {isBn ? "সাইজ:" : "Size:"}
+                          </span>
+                          <span className="text-[10px]" style={{ color: textMuted }}>
                             {isBn ? (item.selectedSizeBn || item.selectedSize) : (item.selectedSize || item.selectedSizeBn)}
                           </span>
                         </div>
@@ -144,23 +164,29 @@ export const CartDrawer = ({ open, onClose }) => {
                     </div>
 
                     {/* Quantity Controls */}
-                    <div className="flex items-center gap-2 mt-2 border border-gray-300 inline-flex rounded">
+                    <div className="flex items-center gap-2 mt-2 border inline-flex rounded" style={{ borderColor: borderColor }}>
                       <button
                         onClick={() => handleQuantityChange(item._id, item.quantity - 1)}
-                        className="p-1 border-r border-gray-300 hover:bg-gray-200 transition-colors"
+                        className="p-1 transition-colors"
+                        style={{ borderRight: `1px solid ${borderColor}` }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                         aria-label={isBn ? "কমান" : "Decrease"}
                       >
-                        <Minus size={12} />
+                        <Minus size={12} style={{ color: textMuted }} />
                       </button>
-                      <span className="w-4 text-center text-sm font-medium">
+                      <span className="w-4 text-center text-sm font-medium" style={{ color: textColor }}>
                         {item.quantity}
                       </span>
                       <button
                         onClick={() => handleQuantityChange(item._id, item.quantity + 1)}
-                        className="p-1 border-l border-gray-300 hover:bg-gray-200 transition-colors"
+                        className="p-1 transition-colors"
+                        style={{ borderLeft: `1px solid ${borderColor}` }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                         aria-label={isBn ? "বাড়ান" : "Increase"}
                       >
-                        <Plus size={12} />
+                        <Plus size={12} style={{ color: textMuted }} />
                       </button>
                     </div>
                   </div>
@@ -168,7 +194,10 @@ export const CartDrawer = ({ open, onClose }) => {
                   {/* Remove Button */}
                   <button
                     onClick={() => removeFromCart(item._id)}
-                    className="text-gray-400 hover:text-red-500 transition-colors self-start"
+                    className="transition-colors self-start"
+                    style={{ color: textMuted }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#EF4444'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
                     aria-label={isBn ? "সরান" : "Remove"}
                   >
                     <Trash2 size={18} />
@@ -181,18 +210,15 @@ export const CartDrawer = ({ open, onClose }) => {
 
         {/* Footer - Fixed Bottom */}
         {cart.length > 0 && (
-          <div className="border-t border-gray-200 bg-white sticky bottom-0">
+          <div className="border-t sticky bottom-0" style={{ borderTopColor: borderColor, backgroundColor: backgroundColor }}>
             {/* Subtotal */}
-            <div className="p-3 bg-gray-50">
+            <div className="p-3" style={{ backgroundColor: hoverBg }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-600 font-semibold">{texts.subtotal}</span>
-                <span className="text-xl font-bold text-[#ef553f]">
+                <span className="font-semibold" style={{ color: textMuted }}>{texts.subtotal}</span>
+                <span className="text-xl font-bold" style={{ color: priceColor }}>
                   {taka(subtotal)}
                 </span>
               </div>
-              {/* <p className="text-xs text-gray-500">
-                * Shipping and taxes calculated at checkout
-              </p> */}
             </div>
 
             {/* Buttons */}
@@ -201,28 +227,30 @@ export const CartDrawer = ({ open, onClose }) => {
                 <Link
                   href="/cart"
                   onClick={onClose}
-                  className="border-2 border-gray-800 text-gray-800 font-medium py-2 px-3 rounded-lg text-center hover:bg-gray-800 hover:text-white transition-all duration-200 text-sm"
+                  className="border-2 font-medium py-2 px-3 rounded-lg text-center transition-all duration-200 text-sm"
+                  style={{ borderColor: textColor, color: textColor }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = textColor;
+                    e.currentTarget.style.color = '#FFFFFF';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = textColor;
+                  }}
                 >
                   {texts.viewCart}
                 </Link>
                 <Link
                   href="/checkout"
                   onClick={onClose}
-                  className="bg-[#ef553f] text-white font-medium py-2 px-3 rounded-lg text-center hover:bg-[#d43f2a] transition-all duration-200 shadow-md hover:shadow-lg text-sm"
+                  className="text-white font-medium py-2 px-3 rounded-lg text-center transition-all duration-200 shadow-md hover:shadow-lg text-sm"
+                  style={{ backgroundColor: primaryColor }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
                 >
                   {texts.checkout}
                 </Link>
               </div>
-
-              {/* Secure Checkout Badge - Commented but kept for future use */}
-              {/* <div className="flex items-center justify-center gap-2 mt-4 text-xs text-gray-500">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span>Secure Checkout</span>
-                <span>•</span>
-                <span>SSL Encrypted</span>
-              </div> */}
             </div>
           </div>
         )}

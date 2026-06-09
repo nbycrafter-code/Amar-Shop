@@ -94,6 +94,7 @@ interface PageSetProps {
   sizes?: Size[];
   colors?: Color[];
   products: Product[];
+  settings?: any; // settings prop যোগ করা হলো
 }
 
 export const PageSet = ({
@@ -101,10 +102,24 @@ export const PageSet = ({
   brands = [],
   sizes = [],
   colors = [],
-  products
+  products,
+  settings = {}
 }: PageSetProps) => {
   const { language } = useLanguage();
   const isBn = language === "bn";
+
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#d4382c";
+  const textColor = settings?.textColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const backgroundColor = settings?.backgroundColor || "#F9FAFB";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const cardBg = settings?.cardBackground || "#FFFFFF";
+  const hoverBg = settings?.hoverBackground || "#F3F4F6";
+  const successColor = settings?.successColor || "#10B981";
+  const gradientStart = settings?.gradientStart || "#ef553f";
+  const gradientEnd = settings?.gradientEnd || "#f97316";
 
   // Filter states
   const [filters, setFilters] = useState<Filters>({
@@ -123,20 +138,17 @@ export const PageSet = ({
 
   // Translations
   const texts = {
-    // Page
     offers: isBn ? "অফার" : "Offers",
     specialOffers: isBn ? "স্পেশাল অফার" : "Special Offers",
     dontMissOut: isBn ? "এই অসাধারণ অফারগুলি মিস করবেন না!" : "Don't miss out on these amazing deals!",
     productsOnSale: (count) => isBn ? `${count}টি পণ্য ছাড়ে` : `${count} Products on Sale`,
     
-    // Header
     todaysBestDeals: isBn ? "আজকের সেরা ডিল" : "Today's Best Deals",
     showingOfferProducts: (current, total) => isBn 
       ? `${current}টির মধ্যে ${total}টি অফার পণ্য দেখানো হচ্ছে`
       : `Showing ${current} of ${total} offer products`,
     saveUpTo: (percent) => isBn ? `${percent}% পর্যন্ত ছাড় পান` : `Save up to ${percent}% off`,
     
-    // Toolbar
     offerProductsFound: (count) => isBn ? `${count}টি অফার পণ্য পাওয়া গেছে` : `${count} offer products found`,
     sortBy: isBn ? "সাজান:" : "Sort by:",
     default: isBn ? "ডিফল্ট (সর্বশেষ প্রথমে)" : "Default (Newest First)",
@@ -147,13 +159,11 @@ export const PageSet = ({
     newestFirst: isBn ? "সর্বশেষ প্রথমে" : "Newest First",
     nameAZ: isBn ? "নাম A-Z" : "Name A-Z",
     
-    // Empty State
     noOfferProducts: isBn ? "কোন অফার পণ্য পাওয়া যায়নি" : "No Offer Products Found",
     noMatchFilters: isBn ? "আপনার নির্বাচিত ফিল্টারের সাথে মিলে এমন কোন পণ্য নেই" : "No products match your selected filters",
     clearAllFilters: isBn ? "সব ফিল্টার সরান" : "Clear All Filters",
   };
 
-  // Sort options with translations
   const sortOptions = [
     { value: "default", label: texts.default },
     { value: "price-low", label: texts.priceLowToHigh },
@@ -317,13 +327,13 @@ export const PageSet = ({
   }, [products]);
 
   return (
-    <div className="bg-gray-50 py-8 min-h-screen">
+    <div className="py-8 min-h-screen" style={{ backgroundColor: backgroundColor }}>
       <div className="container mx-auto px-4">
         {/* Breadcrumb */}
-        <Breadcrumb page={texts.offers} className="py-2" />
+        <Breadcrumb page={texts.offers} className="py-2" settings={settings} />
 
         {/* Hero Banner */}
-        <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl p-8 mb-8 text-white">
+        <div className="rounded-2xl p-8 mb-8 text-white" style={{ background: `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})` }}>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
               <div className="bg-white/20 p-3 rounded-full">
@@ -355,24 +365,25 @@ export const PageSet = ({
               initialFilters={filters}
               type="offer"
               disabled={false}
+              settings={settings}
             />
           </div>
 
           {/* Main Content */}
           <div>
             {/* Header */}
-            <div className="bg-white rounded-lg p-6 mb-6 shadow-sm">
+            <div className="rounded-lg p-6 mb-6 shadow-sm" style={{ backgroundColor: cardBg }}>
               <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-800">
+                  <h2 className="text-xl font-semibold" style={{ color: textColor }}>
                     {texts.todaysBestDeals}
                   </h2>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm" style={{ color: textMuted }}>
                     {texts.showingOfferProducts(currentProducts.length, sortedProducts.length)}
                   </p>
                 </div>
-                <div className="bg-green-50 px-4 py-2 rounded-lg">
-                  <p className="text-green-600 font-semibold">
+                <div className="px-4 py-2 rounded-lg" style={{ backgroundColor: `${successColor}20` }}>
+                  <p className="font-semibold" style={{ color: successColor }}>
                     {texts.saveUpTo(averageDiscount)}
                   </p>
                 </div>
@@ -380,17 +391,20 @@ export const PageSet = ({
             </div>
 
             {/* Toolbar */}
-            <div className="bg-white rounded-lg p-4 mb-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div className="text-sm text-gray-600">
-                <span className="font-semibold">{sortedProducts.length}</span> {texts.offerProductsFound(sortedProducts.length)}
+            <div className="rounded-lg p-4 mb-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4" style={{ backgroundColor: cardBg }}>
+              <div className="text-sm" style={{ color: textMuted }}>
+                <span className="font-semibold" style={{ color: textColor }}>{sortedProducts.length}</span> {texts.offerProductsFound(sortedProducts.length)}
               </div>
 
               <div className="flex items-center gap-3">
-                <label className="text-sm text-gray-600">{texts.sortBy}</label>
+                <label className="text-sm" style={{ color: textMuted }}>{texts.sortBy}</label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-sm bg-white cursor-pointer"
+                  className="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none text-sm bg-white cursor-pointer"
+                  style={{ borderColor: borderColor }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = primaryColor}
+                  onBlur={(e) => e.currentTarget.style.borderColor = borderColor}
                 >
                   {sortOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -406,7 +420,7 @@ export const PageSet = ({
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                   {currentProducts.map((product) => (
-                    <ProductCard key={product._id || product.id} product={product} />
+                    <ProductCard key={product._id || product.id} product={product} settings={settings} />
                   ))}
                 </div>
 
@@ -416,11 +430,27 @@ export const PageSet = ({
                     <button
                       onClick={() => goToPage(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                        currentPage === 1
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
-                      }`}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all`}
+                      style={{
+                        backgroundColor: currentPage === 1 ? hoverBg : cardBg,
+                        border: currentPage === 1 ? 'none' : `1px solid ${borderColor}`,
+                        color: currentPage === 1 ? textMuted : textColor,
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (currentPage !== 1) {
+                          e.currentTarget.style.backgroundColor = primaryColor;
+                          e.currentTarget.style.color = '#FFFFFF';
+                          e.currentTarget.style.borderColor = primaryColor;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (currentPage !== 1) {
+                          e.currentTarget.style.backgroundColor = cardBg;
+                          e.currentTarget.style.color = textColor;
+                          e.currentTarget.style.borderColor = borderColor;
+                        }
+                      }}
                     >
                       <ChevronLeft size={18} />
                     </button>
@@ -441,11 +471,27 @@ export const PageSet = ({
                         <button
                           key={pageNum}
                           onClick={() => goToPage(pageNum)}
-                          className={`w-10 h-10 rounded-lg transition-all ${
-                            currentPage === pageNum
-                              ? "bg-red-500 text-white shadow-md"
-                              : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
-                          }`}
+                          className="w-10 h-10 rounded-lg transition-all"
+                          style={{
+                            backgroundColor: currentPage === pageNum ? primaryColor : cardBg,
+                            color: currentPage === pageNum ? '#FFFFFF' : textColor,
+                            border: currentPage === pageNum ? 'none' : `1px solid ${borderColor}`,
+                            boxShadow: currentPage === pageNum ? `0 2px 8px ${primaryColor}40` : 'none'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentPage !== pageNum) {
+                              e.currentTarget.style.backgroundColor = primaryColor;
+                              e.currentTarget.style.color = '#FFFFFF';
+                              e.currentTarget.style.borderColor = primaryColor;
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentPage !== pageNum) {
+                              e.currentTarget.style.backgroundColor = cardBg;
+                              e.currentTarget.style.color = textColor;
+                              e.currentTarget.style.borderColor = borderColor;
+                            }
+                          }}
                         >
                           {pageNum}
                         </button>
@@ -455,11 +501,27 @@ export const PageSet = ({
                     <button
                       onClick={() => goToPage(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                        currentPage === totalPages
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-white border border-gray-300 hover:bg-red-500 hover:text-white hover:border-red-500"
-                      }`}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all`}
+                      style={{
+                        backgroundColor: currentPage === totalPages ? hoverBg : cardBg,
+                        border: currentPage === totalPages ? 'none' : `1px solid ${borderColor}`,
+                        color: currentPage === totalPages ? textMuted : textColor,
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (currentPage !== totalPages) {
+                          e.currentTarget.style.backgroundColor = primaryColor;
+                          e.currentTarget.style.color = '#FFFFFF';
+                          e.currentTarget.style.borderColor = primaryColor;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (currentPage !== totalPages) {
+                          e.currentTarget.style.backgroundColor = cardBg;
+                          e.currentTarget.style.color = textColor;
+                          e.currentTarget.style.borderColor = borderColor;
+                        }
+                      }}
                     >
                       <ChevronRight size={18} />
                     </button>
@@ -468,12 +530,12 @@ export const PageSet = ({
               </>
             ) : (
               /* Empty State */
-              <div className="bg-white rounded-lg p-12 text-center">
+              <div className="rounded-lg p-12 text-center" style={{ backgroundColor: cardBg }}>
                 <div className="flex flex-col items-center">
                   <svg
-                    className="w-24 h-24 text-gray-400 mb-4"
+                    className="w-24 h-24 mb-4"
                     fill="none"
-                    stroke="currentColor"
+                    stroke={textMuted}
                     viewBox="0 0 24 24"
                   >
                     <path
@@ -483,10 +545,10 @@ export const PageSet = ({
                       d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                     />
                   </svg>
-                  <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                  <h3 className="text-xl font-semibold mb-2" style={{ color: textColor }}>
                     {texts.noOfferProducts}
                   </h3>
-                  <p className="text-gray-500 mb-4">
+                  <p className="mb-4" style={{ color: textMuted }}>
                     {texts.noMatchFilters}
                   </p>
                   {(filters.categories.length > 0 || filters.brands.length > 0 || 
@@ -495,7 +557,10 @@ export const PageSet = ({
                     filters.rating) && (
                     <button
                       onClick={clearAllFilters}
-                      className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      className="px-6 py-2 text-white rounded-lg transition-colors"
+                      style={{ backgroundColor: primaryColor }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
                     >
                       {texts.clearAllFilters}
                     </button>

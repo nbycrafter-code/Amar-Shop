@@ -34,6 +34,7 @@ import {
   Globe,
 } from "lucide-react";
 import SeoForm from "../components/SeoForm";
+import TipTapEditor from "@/components/TipTapEditor";
 
 interface PageContentType {
   _id?: string;
@@ -191,9 +192,9 @@ export default function AdminPages() {
       const seoPageId = `page_${activePage}`;
       const res = await fetch(`/api/seo?pageId=${seoPageId}&pageType=page`);
       const data = await res.json();
-      
+
       console.log("SEO Data fetched for", activePage, data);
-      
+
       if (data.success && data.data) {
         setExistingSeo(data.data);
       } else {
@@ -328,11 +329,10 @@ export default function AdminPages() {
                         setBannerImage(null);
                         setAboutImage(null);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                        activePage === page.id
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${activePage === page.id
                           ? "bg-blue-50 text-blue-600"
                           : "text-gray-600 hover:bg-gray-50"
-                      }`}
+                        }`}
                     >
                       <Icon className="w-4 h-4" />
                       <span className="flex-1 text-left">{page.name}</span>
@@ -355,11 +355,10 @@ export default function AdminPages() {
               <button
                 type="button"
                 onClick={() => setShowSeoForm(!showSeoForm)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  showSeoForm
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${showSeoForm
                     ? "bg-gray-200 text-gray-700"
                     : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
+                  }`}
               >
                 {showSeoForm ? (
                   <>
@@ -477,7 +476,7 @@ export default function AdminPages() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Content (English) *
                     </label>
-                    <textarea
+                    {/* <textarea
                       name="content"
                       value={formData.content}
                       onChange={handleInputChange}
@@ -485,13 +484,20 @@ export default function AdminPages() {
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter content..."
+                    /> */}
+                    <TipTapEditor
+                      name="content"
+                      value={formData.content}
+                      onChange={handleInputChange}
+                      placeholder="Enter content..."
+                      minHeight="100px"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Content (বাংলা) *
                     </label>
-                    <textarea
+                    {/* <textarea
                       name="contentBn"
                       value={formData.contentBn}
                       onChange={handleInputChange}
@@ -499,6 +505,13 @@ export default function AdminPages() {
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       placeholder="কন্টেন্ট লিখুন..."
+                    /> */}
+                    <TipTapEditor
+                      name="contentBn"
+                      value={formData.contentBn}
+                      onChange={handleInputChange}
+                      placeholder="কন্টেন্ট লিখুন..."
+                      minHeight="100px"
                     />
                   </div>
                 </div>
@@ -512,13 +525,20 @@ export default function AdminPages() {
                           <Target className="w-4 h-4" />
                           Mission (English)
                         </label>
-                        <textarea
+                        {/* <textarea
                           name="mission"
                           value={formData.mission || ""}
                           onChange={handleInputChange}
                           rows={3}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                           placeholder="Our mission..."
+                        /> */}
+                        <TipTapEditor
+                          name="mission"
+                          value={formData.mission}
+                          onChange={handleInputChange}
+                          placeholder="Our mission..."
+                          minHeight="100px"
                         />
                       </div>
                       <div>
@@ -526,13 +546,20 @@ export default function AdminPages() {
                           <Target className="w-4 h-4" />
                           Mission (বাংলা)
                         </label>
-                        <textarea
+                        {/* <textarea
                           name="missionBn"
                           value={formData.missionBn || ""}
                           onChange={handleInputChange}
                           rows={3}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                           placeholder="আমাদের মিশন..."
+                        /> */}
+                        <TipTapEditor
+                          name="missionBn"
+                          value={formData.missionBn}
+                          onChange={handleInputChange}
+                          placeholder="আমাদের মিশন..."
+                          minHeight="100px"
                         />
                       </div>
                     </div>
@@ -543,13 +570,20 @@ export default function AdminPages() {
                           <Eye className="w-4 h-4" />
                           Vision (English)
                         </label>
-                        <textarea
+                        {/* <textarea
                           name="vision"
                           value={formData.vision || ""}
                           onChange={handleInputChange}
                           rows={3}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                           placeholder="Our vision..."
+                        /> */}
+                        <TipTapEditor
+                          name="vision"
+                          value={formData.vision}
+                          onChange={handleInputChange}
+                          placeholder="Our vision..."
+                          minHeight="100px"
                         />
                       </div>
                       <div>
@@ -557,13 +591,20 @@ export default function AdminPages() {
                           <Eye className="w-4 h-4" />
                           Vision (বাংলা)
                         </label>
-                        <textarea
+                        {/* <textarea
                           name="visionBn"
                           value={formData.visionBn || ""}
                           onChange={handleInputChange}
                           rows={3}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                           placeholder="আমাদের ভিশন..."
+                        /> */}
+                        <TipTapEditor
+                          name="visionBn"
+                          value={formData.visionBn}
+                          onChange={handleInputChange}
+                          placeholder="আমাদের ভিশন..."
+                          minHeight="100px"
                         />
                       </div>
                     </div>
@@ -728,7 +769,7 @@ export default function AdminPages() {
                 )}
 
                 {/* Social Links */}
-                <div className="border-t pt-6">
+                {/* <div className="border-t pt-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     {language === 'bn' ? "সোশ্যাল মিডিয়া লিংক" : "Social Media Links"}
                   </h3>
@@ -799,10 +840,10 @@ export default function AdminPages() {
                       />
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Submit Button */}
-                <div className="flex justify-end pt-4 border-t">
+                <div className="flex justify-end pt-4">
                   <button
                     type="submit"
                     disabled={saving}

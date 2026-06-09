@@ -3,11 +3,30 @@
 import { ArrowLeftIcon, ArrowRightIcon, ZoomIn, ZoomOut, X } from "lucide-react";
 import { Stars } from "./Stars";
 import { useState, useRef } from "react";
-import { useLanguage } from "@/context/LanguageContext"; // ✅ যোগ করুন
+import { useLanguage } from "@/context/LanguageContext";
 
-export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
-  const { language } = useLanguage(); // ✅ যোগ করুন
+interface QuickViewModalProps {
+  onClose: () => void;
+  activeProduct: any;
+  addToCart: (item: any) => void;
+  settings?: any; // settings prop যোগ করা হলো
+}
+
+export const QuickViewModal = ({ onClose, activeProduct, addToCart, settings = {} }: QuickViewModalProps) => {
+  const { language } = useLanguage();
   const isBn = language === 'bn';
+  
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#f0533a";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#de452d";
+  const textColor = settings?.textColor || "#3a3a3a";
+  const textMuted = settings?.textMuted || "#7a7a7a";
+  const borderColor = settings?.borderColor || "#e3e3e3";
+  const priceColor = settings?.primaryColor || "#f05a40";
+  const reviewColor = settings?.secondaryColor || "#ff613d";
+  const dotActiveColor = settings?.textColor || "#2f2f2f";
+  const dotInactiveColor = settings?.borderColor || "#b8b8b8";
+  const zoomControlBg = settings?.cardBackground || "#FFFFFF";
   
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -16,22 +35,18 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
   const [zoomLevel, setZoomLevel] = useState(200);
   const imageContainerRef = useRef(null);
 
-  // Early return if no active product
   if (!activeProduct) {
     return null;
   }
 
-  // Helper function to get text based on language
   const getText = (enText, bnText) => {
     return isBn ? bnText : enText;
   };
 
-  // Get product name based on language
   const getProductName = () => {
     return isBn ? (activeProduct.nameBn || activeProduct.name) : activeProduct.name;
   };
 
-  // Get category name based on language
   const getCategoryName = () => {
     if (isBn) {
       return activeProduct.categoryNameBn || activeProduct.categoryName || activeProduct.category || "অশ্রেণীবদ্ধ";
@@ -39,7 +54,6 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
     return activeProduct.categoryName || activeProduct.category || "Uncategorized";
   };
 
-  // Get review text based on language
   const getReviewText = () => {
     if (isBn) {
       return activeProduct.reviewTextBn || activeProduct.reviewText || "কোন রিভিউ নেই";
@@ -47,7 +61,6 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
     return activeProduct.reviewText || "No reviews";
   };
 
-  // Get description based on language
   const getDescription = () => {
     if (isBn) {
       return activeProduct.descriptionBn || activeProduct.description || "কোন বিবরণ পাওয়া যায়নি";
@@ -64,11 +77,9 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
       }
       return (prev + 1) % activeProduct.images.length;
     });
-    // Reset zoom when changing image
     setZoomLevel(200);
   };
 
-  // Zoom handlers
   const handleMouseMove = (e) => {
     if (!imageContainerRef.current) return;
 
@@ -90,7 +101,6 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
     setZoomLevel(prev => Math.max(prev - 50, 100));
   };
 
-  // Add to cart handler
   const handleAddToCart = () => {
     const cartItem = {
       ...activeProduct,
@@ -100,7 +110,6 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
     onClose?.();
   };
 
-  // Buy now handler
   const handleBuyNow = () => {
     const cartItem = {
       ...activeProduct,
@@ -114,7 +123,6 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
   const hasImages = activeProduct.images && activeProduct.images.length > 0;
   const currentImage = hasImages ? activeProduct.images[activeImageIndex] : null;
 
-  // Translations
   const translations = {
     noImageAvailable: getText("No image available", "কোন ছবি নেই"),
     noReviews: getText("No reviews", "কোন রিভিউ নেই"),
@@ -136,7 +144,10 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center border border-[#d9d9d9] bg-white text-[#404040] transition hover:text-[#ea553b]"
+            className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center border transition"
+            style={{ borderColor: borderColor, backgroundColor: '#FFFFFF', color: textMuted }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = primaryColor; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = textMuted; }}
             aria-label={translations.close}
           >
             <X className="h-5 w-5" />
@@ -145,21 +156,27 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
           {/* Image Section with Zoom */}
           <div className="relative flex min-h-[460px] items-center justify-center bg-white px-10 py-10">
             {/* Zoom Controls */}
-            <div className="absolute top-4 left-4 z-20 flex items-center gap-1 bg-white/80 rounded-full p-1 backdrop-blur-sm">
+            <div className="absolute top-4 left-4 z-20 flex items-center gap-1 rounded-full p-1 backdrop-blur-sm" style={{ backgroundColor: `${zoomControlBg}cc` }}>
               <button
                 onClick={handleZoomOut}
-                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1.5 rounded-full transition-colors"
+                style={{ color: textMuted }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${primaryColor}10`}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 title={translations.zoomOut}
                 aria-label={translations.zoomOut}
               >
                 <ZoomOut size={14} />
               </button>
-              <span className="text-xs font-medium text-gray-700 min-w-[45px] text-center">
+              <span className="text-xs font-medium min-w-[45px] text-center" style={{ color: textColor }}>
                 {zoomLevel}%
               </span>
               <button
                 onClick={handleZoomIn}
-                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1.5 rounded-full transition-colors"
+                style={{ color: textMuted }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${primaryColor}10`}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 title={translations.zoomIn}
                 aria-label={translations.zoomIn}
               >
@@ -171,7 +188,10 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
               <>
                 <button
                   onClick={() => goSlide("prev")}
-                  className="absolute left-4 top-1/2 z-10 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#f2654a] text-white shadow-md transition hover:bg-[#e55337]"
+                  className="absolute left-4 top-1/2 z-10 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-white shadow-md transition"
+                  style={{ backgroundColor: primaryColor }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
                   aria-label="Previous image"
                 >
                   <ArrowLeftIcon size={18} />
@@ -191,7 +211,6 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
                       className="w-full h-full object-contain"
                     />
                     
-                    {/* Zoom lens effect */}
                     {showZoom && zoomLevel > 100 && (
                       <div
                         className="absolute inset-0 pointer-events-none"
@@ -208,13 +227,15 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
 
                 <button
                   onClick={() => goSlide("next")}
-                  className="absolute right-4 top-1/2 z-10 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#f2654a] text-white shadow-md transition hover:bg-[#e55337]"
+                  className="absolute right-4 top-1/2 z-10 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-white shadow-md transition"
+                  style={{ backgroundColor: primaryColor }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
                   aria-label="Next image"
                 >
                   <ArrowRightIcon size={18} />
                 </button>
 
-                {/* Zoom indicator */}
                 {showZoom && zoomLevel > 100 && (
                   <div className="absolute bottom-16 left-4 bg-black/70 text-white text-xs px-2 py-1 rounded backdrop-blur-sm z-20">
                     {zoomLevel}% {isBn ? 'জুম' : 'zoom'}
@@ -227,51 +248,60 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
                     <button
                       key={`${activeProduct.id}-${image}-${index}`}
                       onClick={() => setActiveImageIndex(index)}
-                      className={`h-2.5 w-2.5 rounded-full transition ${index === activeImageIndex ? "bg-[#2f2f2f]" : "bg-[#b8b8b8]"}`}
+                      className={`h-2.5 w-2.5 rounded-full transition`}
+                      style={{ 
+                        backgroundColor: index === activeImageIndex ? dotActiveColor : dotInactiveColor,
+                        opacity: index === activeImageIndex ? 1 : 0.6
+                      }}
+                      onMouseEnter={(e) => { if (index !== activeImageIndex) e.currentTarget.style.backgroundColor = primaryColor; }}
+                      onMouseLeave={(e) => { if (index !== activeImageIndex) e.currentTarget.style.backgroundColor = dotInactiveColor; }}
                       aria-label={`Go to image ${index + 1}`}
                     />
                   ))}
                 </div>
               </>
             ) : (
-              <div className="text-center text-gray-400">{translations.noImageAvailable}</div>
+              <div className="text-center" style={{ color: textMuted }}>{translations.noImageAvailable}</div>
             )}
           </div>
 
           {/* Product Info Section */}
           <div className="px-7 py-6 sm:px-8 sm:py-7">
-            <h3 className="max-w-[420px] text-[22px] font-medium leading-[1.35] text-[#3a3a3a]">
+            <h3 className="max-w-[420px] text-[22px] font-medium leading-[1.35]" style={{ color: textColor }}>
               {getProductName()}
             </h3>
 
             <div className="mt-3 flex items-center gap-2">
               <Stars rating={activeProduct.rating || 0} />
-              <span className="text-[15px] text-[#ff613d]">
+              <span className="text-[15px]" style={{ color: reviewColor }}>
                 {getReviewText()}
               </span>
             </div>
 
-            <div className="mt-5 text-[31px] font-medium text-[#f05a40]">
+            <div className="mt-5 text-[31px] font-medium" style={{ color: priceColor }}>
               ${activeProduct.price || "0.00"}
               {activeProduct.originalPrice && (
-                <span className="ml-2 text-lg text-gray-400 line-through">
+                <span className="ml-2 text-lg line-through" style={{ color: textMuted }}>
                   ${activeProduct.originalPrice}
                 </span>
               )}
             </div>
 
-            <p className="mt-4 text-[15px] leading-8 text-[#7a7a7a] line-clamp-3">
+            <p className="mt-4 text-[15px] leading-8 line-clamp-3" style={{ color: textMuted }}>
               {getDescription()}
             </p>
 
             {/* Quantity and Add to Cart */}
             <div className="mt-5 flex gap-3">
-              <div className="flex h-[40px] w-[52px] items-center justify-center border border-[#dadada] bg-white text-[24px] text-[#7a7a7a]">
+              <div className="flex h-[40px] w-[52px] items-center justify-center border bg-white text-[24px]" style={{ borderColor: borderColor, color: textMuted }}>
                 {quantity}
               </div>
               <button 
                 onClick={handleAddToCart}
-                className="flex-1 bg-[#f0533a] px-5 text-[15px] font-semibold text-white transition hover:bg-[#de452d]"
+                className="flex-1 px-5 text-[15px] font-semibold text-white transition"
+                style={{ backgroundColor: primaryColor }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
               >
                 {translations.addToCart}
               </button>
@@ -279,23 +309,32 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
 
             <button 
               onClick={handleBuyNow}
-              className="mt-5 h-[41px] w-full bg-[#f0533a] text-[15px] font-semibold text-white transition hover:bg-[#de452d]"
+              className="mt-5 h-[41px] w-full text-[15px] font-semibold text-white transition"
+              style={{ backgroundColor: primaryColor }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
             >
               {translations.buyNow}
             </button>
 
             {/* Quantity Adjuster */}
-            <div className="mt-4 flex items-center gap-3 text-sm text-[#7b7b7b]">
+            <div className="mt-4 flex items-center gap-3 text-sm" style={{ color: textMuted }}>
               <button
                 onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#e3e3e3] text-lg transition hover:border-[#f0533a] hover:text-[#f0533a]"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border text-lg transition"
+                style={{ borderColor: borderColor }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = primaryColor; e.currentTarget.style.color = primaryColor; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = borderColor; e.currentTarget.style.color = textMuted; }}
                 aria-label="Decrease quantity"
               >
                 −
               </button>
               <button
                 onClick={() => setQuantity((prev) => prev + 1)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#e3e3e3] text-lg transition hover:border-[#f0533a] hover:text-[#f0533a]"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border text-lg transition"
+                style={{ borderColor: borderColor }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = primaryColor; e.currentTarget.style.color = primaryColor; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = borderColor; e.currentTarget.style.color = textMuted; }}
                 aria-label="Increase quantity"
               >
                 +
@@ -304,7 +343,7 @@ export const QuickViewModal = ({ onClose, activeProduct, addToCart }) => {
             </div>
 
             {/* Categories */}
-            <p className="mt-4 text-[15px] leading-8 text-[#7a7a7a]">
+            <p className="mt-4 text-[15px] leading-8" style={{ color: textMuted }}>
               {translations.categories}: {getCategoryName()}
             </p>
 

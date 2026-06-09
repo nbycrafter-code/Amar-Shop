@@ -8,6 +8,7 @@ import { Metadata } from "next";
 import { Breadcrumb } from "../../components/product/Breadcrumb";
 import { JsonLd } from "@/app/components/JsonLd";
 import { cookies } from "next/headers";
+import { getSetting } from "@/queries/settings";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; locale: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
@@ -30,11 +31,12 @@ const ProductDetailsPage = async ({ params }: { params: Promise<{ slug: string; 
   const languageCookie = cookieStore.get('language');
   const language = languageCookie?.value || 'en';
 
-
   const product = await getProductBySlug(slug);
   const seoResult = await getProductSeoMetadata(product._id, product, language);
-
   const products = await getProductsByCategory(product.categorySlug);
+  
+  // Get settings for theme colors
+  const settings = await getSetting();
 
   return (
     <>
@@ -42,12 +44,12 @@ const ProductDetailsPage = async ({ params }: { params: Promise<{ slug: string; 
       <div className="container mx-auto w-full px-4 py-5 pb-20">
         <div className="flex gap-5">
           <div className="flex-1 min-w-0">
-            <Breadcrumb product={product} />
-            <div className="bg-white border border-gray-200 rounded p-5">
-              <ProductDetail product={product} />
+            <Breadcrumb product={product} settings={settings} />
+            <div className="border rounded p-5" style={{ backgroundColor: settings?.cardBackground || '#FFFFFF', borderColor: settings?.borderColor || '#E5E7EB' }}>
+              <ProductDetail product={product} settings={settings} />
             </div>
-            <ProductTabs />
-            <RelatedProducts products={products} />
+            <ProductTabs product={product} settings={settings} />
+            <RelatedProducts products={products} settings={settings} />
           </div>
         </div>
       </div>

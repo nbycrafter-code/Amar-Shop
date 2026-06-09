@@ -11,6 +11,9 @@ export interface ISubCategory extends Document {
   iconBgColor?: string;
   image?: string;
   imageBgColor?: string;
+  bannerImage?: string;
+  description: string;
+  descriptionBn: string;
   active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -59,6 +62,18 @@ const subCategorySchema = new Schema<ISubCategory>(
       type: String,
       default: "#F8FAFC",
     },
+    bannerImage: {
+      type: String,
+      default: null,
+    },
+    description: {
+      type: String,
+      default: null,
+    },
+    descriptionBn: {
+      type: String,
+      default: null,
+    },
     active: {
       type: Boolean,
       default: true,
@@ -75,5 +90,5 @@ const subCategorySchema = new Schema<ISubCategory>(
 subCategorySchema.index({ name: 1, slug: 1 });
 subCategorySchema.index({ categoryId: 1 });
 
-export const SubCategory = (mongoose.models.SubCategory as Model<ISubCategory>) || 
+export const SubCategory = (mongoose.models.SubCategory as Model<ISubCategory>) ||
   mongoose.model<ISubCategory>("SubCategory", subCategorySchema);

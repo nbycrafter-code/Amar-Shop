@@ -113,6 +113,7 @@ export async function POST(request) {
       message: "Email verified successfully! You can now login.",
       verified: true,
       email: user.email,
+      role: user.role,
       name: user.name
     });
 

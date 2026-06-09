@@ -20,10 +20,17 @@ interface CategoryBanner {
 
 interface CategoryPromoProps {
   categoryBanners?: CategoryBanner[];
+  settings?: any; // settings prop যোগ করা হলো
 }
 
-export const CategoryPromo = ({ categoryBanners = [] }: CategoryPromoProps) => {
+export const CategoryPromo = ({ categoryBanners = [], settings }: CategoryPromoProps) => {
   const { language } = useLanguage();
+
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const buttonHoverColor = settings?.buttonPrimaryHover || "#d4382c";
+  const textColor = settings?.textColor || "#FFFFFF";
+  const highlightColor = settings?.secondaryColor || "#ef553f";
 
   const getText = (banner: CategoryBanner, fieldName: string): string => {
     const bnField = `${fieldName}Bn` as keyof CategoryBanner;
@@ -71,20 +78,38 @@ export const CategoryPromo = ({ categoryBanners = [] }: CategoryPromoProps) => {
                   <div className="max-w-[90%]">
                     {/* Subtitle */}
                     {subtitle && (
-                      <p className={`${banner.highlightColor || "text-[#ef553f]"} text-xs md:text-sm mb-2 font-medium uppercase tracking-wide`}>
+                      <p 
+                        className="text-xs md:text-sm mb-2 font-medium uppercase tracking-wide"
+                        style={{ color: banner.highlightColor || highlightColor }}
+                      >
                         {subtitle}
                       </p>
                     )}
                     
                     {/* Title */}
                     {title && (
-                      <h3 className={`${banner.textColor || "text-white"} text-lg md:text-xl font-bold mb-3 md:mb-4 leading-tight`}>
+                      <h3 
+                        className="text-lg md:text-xl font-bold mb-3 md:mb-4 leading-tight"
+                        style={{ color: banner.textColor || textColor }}
+                      >
                         {title}
                       </h3>
                     )}
                     
                     {/* Button */}
-                    <button className="inline-block rounded bg-[#ef553f] hover:bg-[#d4382c] transition-all duration-300 px-5 md:px-7 py-1.5 md:py-2 text-xs md:text-sm font-semibold text-white shadow-md hover:shadow-lg transform hover:scale-105 transition-all">
+                    <button 
+                      className="inline-block rounded transition-all duration-300 px-5 md:px-7 py-1.5 md:py-2 text-xs md:text-sm font-semibold text-white shadow-md hover:shadow-lg transform hover:scale-105"
+                      style={{ 
+                        backgroundColor: primaryColor,
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = buttonHoverColor;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = primaryColor;
+                      }}
+                    >
                       {buttonText || getDefaultButtonText()}
                     </button>
                   </div>

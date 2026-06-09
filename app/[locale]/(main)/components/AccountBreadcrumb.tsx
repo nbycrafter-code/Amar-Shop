@@ -16,6 +16,7 @@ interface AccountBreadcrumbProps {
   customTitle?: string;
   showHomeIcon?: boolean;
   separator?: string;
+  settings?: any; // settings prop যোগ করা হলো
 }
 
 // Route names translations
@@ -90,11 +91,22 @@ const pageDescriptionsBn: PageDescriptions = {
 export const AccountBreadcrumb = ({ 
   customTitle, 
   showHomeIcon = true,
-  separator = "/"
+  separator = "/",
+  settings = {}
 }: AccountBreadcrumbProps) => {
   const pathname = usePathname();
   const { language } = useLanguage();
   const isBn = language === 'bn';
+
+  // থিম কালার - সেটিংস থেকে নেওয়া
+  const primaryColor = settings?.primaryColor || "#ef553f";
+  const textColor = settings?.textColor || "#1F2937";
+  const headingColor = settings?.headingColor || "#1F2937";
+  const textMuted = settings?.textMuted || "#6B7280";
+  const backgroundColor = settings?.backgroundColor || "#FFFFFF";
+  const borderColor = settings?.borderColor || "#E5E7EB";
+  const gradientStart = settings?.gradientStart || "#EFF6FF";
+  const gradientEnd = settings?.gradientEnd || "#FFFFFF";
 
   const getRouteName = (segment: string): string => {
     if (isBn) {
@@ -198,14 +210,23 @@ export const AccountBreadcrumb = ({
   const pageDescription = getPageDescription();
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-white border-b border-gray-100 py-8">
+    <div 
+      className="border-b py-8"
+      style={{ 
+        background: `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})`,
+        borderBottomColor: borderColor
+      }}
+    >
       <div className="container w-full mx-auto px-4">
         <nav className="mb-3" aria-label="Breadcrumb">
           <ol className="flex items-center flex-wrap justify-center gap-1 text-sm">
             <li className="flex items-center">
               <Link 
                 href="/" 
-                className="text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1"
+                className="transition-colors flex items-center gap-1"
+                style={{ color: textMuted }}
+                onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
               >
                 {showHomeIcon && <Home className="w-4 h-4" />}
                 {!showHomeIcon && (isBn ? "হোম" : "Home")}
@@ -214,17 +235,20 @@ export const AccountBreadcrumb = ({
             
             {breadcrumbItems.map((item, index) => (
               <li key={item.path} className="flex items-center">
-                <span className="mx-2 text-gray-400">
+                <span className="mx-2" style={{ color: textMuted }}>
                   {separator === "/" ? "/" : <ChevronRight className="w-3 h-3" />}
                 </span>
                 {item.isLast ? (
-                  <span className="text-gray-700 font-medium">
+                  <span className="font-medium" style={{ color: textColor }}>
                     {item.name}
                   </span>
                 ) : (
                   <Link 
                     href={item.path} 
-                    className="text-gray-500 hover:text-red-500 transition-colors"
+                    className="transition-colors"
+                    style={{ color: textMuted }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                    onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
                   >
                     {item.name}
                   </Link>
@@ -234,12 +258,12 @@ export const AccountBreadcrumb = ({
           </ol>
         </nav>
         
-        <h1 className="text-md md:text-xl lg:text-2xl font-semibold text-gray-800 text-center">
+        <h1 className="text-md md:text-xl lg:text-2xl font-semibold text-center" style={{ color: headingColor }}>
           {pageTitle}
         </h1>
         
         {pageDescription && (
-          <p className="text-center text-gray-500 text-sm mt-2">
+          <p className="text-center text-sm mt-2" style={{ color: textMuted }}>
             {pageDescription}
           </p>
         )}

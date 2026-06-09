@@ -1,7 +1,9 @@
 // app/layout.tsx
 export const dynamic = "force-dynamic";
+import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { getSetting } from "@/queries/settings";
+
 
 
 export async function generateMetadata() {

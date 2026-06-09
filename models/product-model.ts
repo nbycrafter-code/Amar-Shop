@@ -13,8 +13,10 @@ export interface IProduct extends Document {
   brandId: mongoose.Types.ObjectId;
   sizeIds: mongoose.Types.ObjectId[];
   colorIds: mongoose.Types.ObjectId[];
-  description: string;
-  descriptionBn: string;
+  shortDescription: string;
+  shortDescriptionBn: string;
+  longDescription: string;
+  longDescriptionBn: string;
   image: string;
   multiImages: string[];
   video: string;
@@ -89,11 +91,19 @@ const productSchema = new Schema<IProduct>(
       type: Schema.Types.ObjectId,
       ref: 'Color',
     }],
-    description: {
+    shortDescription: {
       type: String,
       default: "",
     },
-    descriptionBn: {
+    shortDescriptionBn: {
+      type: String,
+      default: "",
+    },
+    longDescription: {
+      type: String,
+      default: "",
+    },
+    longDescriptionBn: {
       type: String,
       default: "",
     },

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
 
 export function RegisterForm() {
+  const pathname = usePathname();
   const router = useRouter();
   const [isBn, setIsBn] = useState(true);
   const [firstName, setFirstName] = useState("");
@@ -88,6 +89,8 @@ export function RegisterForm() {
       setError("");
 
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
+      const isBengali = pathname.split('/')[1];
+
 
       const data = {
         name: fullName,
@@ -96,6 +99,7 @@ export function RegisterForm() {
         phone: phone.trim(),
         email: email.trim().toLowerCase(),
         password: password,
+        language: isBengali,
       };
 
       const response = await fetch("/api/register", {
@@ -115,10 +119,11 @@ export function RegisterForm() {
       } else {
         toast.success(result?.message || (isBn ? "রেজিস্ট্রেশন সফল!" : "Registration Successful!"));
         // Redirect to login page after successful registration
+
         setTimeout(() => {
-          router.push("/login");
+          router.push(`${result?.redirectUrl}`);
           router.refresh();
-        }, 1500);
+        }, 500);
       }
     } catch (err: any) {
       console.error("Registration error:", err);

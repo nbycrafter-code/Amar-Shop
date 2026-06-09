@@ -1,11 +1,13 @@
 
 
+import { getSetting } from "@/queries/settings";
 import { PageSet } from "./PageSet";
 
-const CartPage = () => {
-  
+const CartPage = async() => {
+  const settings = await getSetting();
+
   return (
-    <PageSet />
+    <PageSet settings={settings} />
   );
 };
 
