@@ -356,7 +356,7 @@ export const PageSet = ({ settings = {} }: PageSetProps) => {
           <div className="text-center py-8">
             <p style={{ color: textMuted }}>{texts.noOrdersFound}</p>
             <Link
-              href="/shop"
+              href="/products"
               className="inline-block mt-4 px-4 py-2 text-white rounded transition-colors"
               style={{ backgroundColor: primaryColor }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = buttonHoverColor}

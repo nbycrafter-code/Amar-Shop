@@ -22,7 +22,7 @@ export default async function RootLayout({ children }) {
 
   const session = await auth();
 
-  if (!session?.user || session.user.role !== "admin") {
+  if (!session?.user) {
     redirect("/login");
   }
 
@@ -30,7 +30,6 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        sdf{session}
         <SessionProvider session={session}>
           <LanguageProvider>
             <SettingsProvider>

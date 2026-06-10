@@ -17,7 +17,7 @@ import { PurchaseToast } from "./components/PurchaseToast";
 
 export default function LayoutSet({ children, session, settings, categories }) {
   const pathname = usePathname();
-
+  
   const [drawerOpen, setDrawerOpen] = useState(false);
   const {
     wishlist,

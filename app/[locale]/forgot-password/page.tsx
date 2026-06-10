@@ -5,8 +5,12 @@ import { ForgotPasswordForm } from "./components/ForgotPasswordForm";
 
 const ForgotPasswordPage = async () => {
   const session = await auth();
-  if (session?.user) {
+  if (session?.user && session?.user?.role === 'admin') {
     redirect("/dashboard");
+  }
+
+  if (session?.user && session?.user?.role === 'user') {
+    redirect("/my-account/dashboard");
   }
 
   return (

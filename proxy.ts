@@ -42,6 +42,7 @@ const PUBLIC_ROUTES = [
 
 const LOGIN = "/login";
 const DASHBOARD = "/dashboard";
+const USER_DASHBOARD = "/my-account/dashboard";
 
 function getLocaleFromPath(pathname: string): string | null {
   const segments = pathname.split('/').filter(Boolean);
@@ -78,7 +79,7 @@ export default async function middleware(request: NextRequest) {
     cookieLang && locales.includes(cookieLang) ? cookieLang : defaultLocale;
 
   // ─────────────────────────────────────────────
-  // CASE 1: No locale in path
+  // CASE 1: No locale in path (English URLs)
   // ─────────────────────────────────────────────
   if (!pathLocale) {
     const newPathname = pathname === '/' ? '' : pathname;
@@ -86,6 +87,30 @@ export default async function middleware(request: NextRequest) {
     if (preferredLocale === 'bn') {
       return NextResponse.redirect(new URL(`/bn${newPathname}`, request.url));
     } else {
+      // ✅ /dashboard হিট করলে role চেক করো
+      if (pathname.startsWith('/dashboard') || pathname.startsWith('/my-account')) {
+        try {
+          const session = await auth();
+          const isAuthenticated = !!session?.user;
+
+          if (!isAuthenticated) {
+            const loginUrl = new URL(LOGIN, request.url);
+            loginUrl.searchParams.set("callbackUrl", pathname);
+            return NextResponse.redirect(loginUrl);
+          }
+
+          // /dashboard এ আসলে role দেখে redirect
+          if (pathname === '/dashboard' || pathname.startsWith('/dashboard')) {
+            if (session.user.role === 'user') {
+              return NextResponse.redirect(new URL(USER_DASHBOARD, request.url));
+            }
+            // admin হলে /dashboard এই থাকবে — fall through to rewrite
+          }
+        } catch (error) {
+          console.error("Auth error:", error);
+        }
+      }
+
       // en → rewrite to /en/... internally, URL একই থাকবে
       const rewriteTarget = `/en${newPathname === '' ? '/' : newPathname}`;
       const response = NextResponse.rewrite(new URL(rewriteTarget, request.url));
@@ -106,11 +131,10 @@ export default async function middleware(request: NextRequest) {
   if (locales.includes(pathLocale)) {
     const pathWithoutLocale = getPathWithoutLocale(pathname);
 
-    // ✅ NEW: /en/... → clean URL এ redirect
+    // ✅ /en/... → clean URL এ redirect
     if (pathLocale === 'en') {
       const cleanUrl = pathWithoutLocale === '/' ? '/' : pathWithoutLocale;
       const response = NextResponse.redirect(new URL(cleanUrl, request.url));
-      // Cookie সেট করুন redirect এর সাথে
       response.cookies.set('language', 'en', {
         path: '/',
         maxAge: 365 * 24 * 60 * 60,
@@ -139,6 +163,16 @@ export default async function middleware(request: NextRequest) {
         const loginUrl = new URL(`/${pathLocale}${LOGIN}`, request.url);
         loginUrl.searchParams.set("callbackUrl", pathname);
         return NextResponse.redirect(loginUrl);
+      }
+
+      // ✅ /dashboard হিট করলে role চেক করো (bn)
+      if (pathWithoutLocale.startsWith('/dashboard') && isAuthenticated) {
+        if (session?.user?.role === 'user') {
+          return NextResponse.redirect(
+            new URL(`/${pathLocale}${USER_DASHBOARD}`, request.url)
+          );
+        }
+        // admin হলে /dashboard এই থাকবে
       }
 
       if (pathWithoutLocale.startsWith("/admin")) {

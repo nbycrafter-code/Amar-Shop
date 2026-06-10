@@ -1,7 +1,10 @@
-// proxy.ts (Using your actual /dashboard page)
+// middleware.ts
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+
+const locales = ['en', 'bn'];
+const defaultLocale = 'en';
 
 const PUBLIC_ROUTES = [
   "/login",
@@ -14,6 +17,7 @@ const PUBLIC_ROUTES = [
   "/two-factor-auth",
   "/product",
   "/products",
+  "/brands",
   "/categories",
   "/product-category",
   "/offers",
@@ -37,75 +41,143 @@ const PUBLIC_ROUTES = [
 ];
 
 const LOGIN = "/login";
-const DASHBOARD = "/dashboard"; // আপনার আসল ড্যাশবোর্ড পেজ
+const DASHBOARD = "/dashboard";
 
-export async function proxy(req: NextRequest) {
-  const { nextUrl } = req;
+function getLocaleFromPath(pathname: string): string | null {
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length > 0 && locales.includes(segments[0])) {
+    return segments[0];
+  }
+  return null;
+}
 
-  try {
-    const session = await auth();
-    const isAuthenticated = !!session?.user;
+function getPathWithoutLocale(pathname: string): string {
+  const locale = getLocaleFromPath(pathname);
+  if (locale) {
+    const newPath = pathname.replace(`/${locale}`, '') || '/';
+    return newPath;
+  }
+  return pathname;
+}
 
-    // Allow API routes and static files
-    if (nextUrl.pathname.startsWith("/api")) {
-      return NextResponse.next();
-    }
+export default async function middleware(request: NextRequest) {
+  const { nextUrl } = request;
+  const pathname = nextUrl.pathname;
 
-    // Allow static files
-    if (nextUrl.pathname.match(/\.(jpg|jpeg|png|gif|ico|css|js|svg|webp)$/)) {
-      return NextResponse.next();
-    }
-
-    // Home page
-    if (nextUrl.pathname === "/") {
-      return NextResponse.next();
-    }
-
-    // Check if route is public
-    const isPublicRoute = PUBLIC_ROUTES.some(
-      (route) =>
-        nextUrl.pathname === route || nextUrl.pathname.startsWith(route + "/"),
-    );
-
-    // Redirect unauthenticated users to login
-    if (!isAuthenticated && !isPublicRoute) {
-      const loginUrl = new URL(LOGIN, nextUrl);
-      loginUrl.searchParams.set("callbackUrl", nextUrl.pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // Redirect authenticated users away from login page
-    if (isAuthenticated && nextUrl.pathname === LOGIN) {
-      return NextResponse.redirect(new URL(DASHBOARD, nextUrl));
-    }
-
-    // Protect user account routes (if you have /my-account folder)
-    if (nextUrl.pathname.startsWith("/my-account")) {
-      if (!isAuthenticated) {
-        const loginUrl = new URL(LOGIN, nextUrl);
-        return NextResponse.redirect(loginUrl);
-      }
-    }
-
-    // /dashboard এ কোনো রিডাইরেক্ট করবেন না - সরাসরি পেজ দেখান
-    if (nextUrl.pathname === DASHBOARD) {
-      if (!isAuthenticated) {
-        const loginUrl = new URL(LOGIN, nextUrl);
-        return NextResponse.redirect(loginUrl);
-      }
-      // শুধু অথেনটিকেটেড চেক করুন, কোনো রিডাইরেক্ট নয়
-      return NextResponse.next();
-    }
-
-    return NextResponse.next();
-  } catch (error) {
-    console.error("Proxy error:", error);
+  if (
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/_next") ||
+    pathname.includes(".")
+  ) {
     return NextResponse.next();
   }
+
+  const pathLocale = getLocaleFromPath(pathname);
+  const cookieLang = request.cookies.get('language')?.value;
+  const preferredLocale =
+    cookieLang && locales.includes(cookieLang) ? cookieLang : defaultLocale;
+
+  // ─────────────────────────────────────────────
+  // CASE 1: No locale in path
+  // ─────────────────────────────────────────────
+  if (!pathLocale) {
+    const newPathname = pathname === '/' ? '' : pathname;
+
+    if (preferredLocale === 'bn') {
+      return NextResponse.redirect(new URL(`/bn${newPathname}`, request.url));
+    } else {
+      // en → rewrite to /en/... internally, URL একই থাকবে
+      const rewriteTarget = `/en${newPathname === '' ? '/' : newPathname}`;
+      const response = NextResponse.rewrite(new URL(rewriteTarget, request.url));
+      if (!request.cookies.get('language')) {
+        response.cookies.set('language', 'en', {
+          path: '/',
+          maxAge: 365 * 24 * 60 * 60,
+          sameSite: 'lax',
+        });
+      }
+      return response;
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // CASE 2: Valid locale in path
+  // ─────────────────────────────────────────────
+  if (locales.includes(pathLocale)) {
+    const pathWithoutLocale = getPathWithoutLocale(pathname);
+
+    // ✅ NEW: /en/... → clean URL এ redirect
+    if (pathLocale === 'en') {
+      const cleanUrl = pathWithoutLocale === '/' ? '/' : pathWithoutLocale;
+      const response = NextResponse.redirect(new URL(cleanUrl, request.url));
+      // Cookie সেট করুন redirect এর সাথে
+      response.cookies.set('language', 'en', {
+        path: '/',
+        maxAge: 365 * 24 * 60 * 60,
+        sameSite: 'lax',
+      });
+      return response;
+    }
+
+    // bn এর জন্য auth checks
+    try {
+      const session = await auth();
+      const isAuthenticated = !!session?.user;
+
+      const isPublicRoute = PUBLIC_ROUTES.some(
+        (route) =>
+          pathWithoutLocale === route ||
+          pathWithoutLocale.startsWith(route + "/")
+      );
+
+      const isProtectedRoute =
+        pathWithoutLocale.startsWith("/dashboard") ||
+        pathWithoutLocale.startsWith("/my-account") ||
+        pathWithoutLocale === "/checkout";
+
+      if (isProtectedRoute && !isPublicRoute && !isAuthenticated) {
+        const loginUrl = new URL(`/${pathLocale}${LOGIN}`, request.url);
+        loginUrl.searchParams.set("callbackUrl", pathname);
+        return NextResponse.redirect(loginUrl);
+      }
+
+      if (pathWithoutLocale.startsWith("/admin")) {
+        if (!isAuthenticated) {
+          const loginUrl = new URL(`/${pathLocale}${LOGIN}`, request.url);
+          loginUrl.searchParams.set("callbackUrl", pathname);
+          return NextResponse.redirect(loginUrl);
+        }
+        if (session?.user?.role !== "admin") {
+          return NextResponse.redirect(new URL(`/${pathLocale}`, request.url));
+        }
+      }
+
+      if (isAuthenticated && pathWithoutLocale === LOGIN) {
+        return NextResponse.redirect(
+          new URL(`/${pathLocale}${DASHBOARD}`, request.url)
+        );
+      }
+    } catch (error) {
+      console.error("Auth error:", error);
+    }
+
+    const response = NextResponse.next();
+    if (!request.cookies.get('language')) {
+      response.cookies.set('language', pathLocale, {
+        path: '/',
+        maxAge: 365 * 24 * 60 * 60,
+        sameSite: 'lax',
+      });
+    }
+    return response;
+  }
+
+  // ─────────────────────────────────────────────
+  // CASE 3: Invalid locale → fallback
+  // ─────────────────────────────────────────────
+  return NextResponse.redirect(new URL(`/`, request.url));
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next|favicon.ico|.*\\..*|_next/static|_next/image|images|assets).*)",
-  ],
+  matcher: ['/((?!api|_next|_vercel|favicon.ico|.*\\..*).*)',],
 };
