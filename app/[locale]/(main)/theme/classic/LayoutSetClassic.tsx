@@ -2,6 +2,9 @@
 'use client'
 
 import { themePresets } from "@/lib/themePresets";
+import { TopBar } from "./components/TopBar";
+import { Header } from "./components/Header";
+import { Navigation } from "./components/Navigation";
 import { Hero } from "./components/Hero";
 import { TrustBar } from "./components/TrustBar";
 import { Categories } from "./components/Categories";
@@ -14,7 +17,7 @@ import { Newsletter } from "./components/Newsletter";
 import { Footer } from "./components/Footer";
 import { PRODUCTS } from "./data/products";
 import { useLanguage } from "@/context/LanguageContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Children } from "react";
 import { useApp } from "../../context/AppContext";
 
 interface PetShopProps {
@@ -30,7 +33,8 @@ interface PetShopProps {
   session?: any;
 }
 
-export default function PetShop({
+export default function LayoutSetClassic({
+  children,
   settings: propSettings,
   sliders = [],
   categories = [],
@@ -81,80 +85,48 @@ export default function PetShop({
     : displayProducts.slice(0, 4);
 
   return (
-    <>
-      <Hero
+    <div
+      className="min-h-screen font-sans"
+      style={{
+        backgroundColor: settings.backgroundColor || "#FFFFFF",
+        color: settings.textColor || "#1F2937",
+      }}
+    >
+      <TopBar
         settings={settings}
-        sliders={sliders}
         theme={classicTheme}
       />
 
-      <TrustBar
-        settings={settings}
-        theme={classicTheme}
-      />
-
-      <Categories
+      <Header
+        session={session}
         settings={settings}
         categories={categories}
+        openCart={() => { }} // This will be connected to cart drawer
+        wishlistCount={wishCount}
+        onWishlistClick={() => { }} // This will be connected to wishlist page
         theme={classicTheme}
       />
 
-      <ProductSection
-        title={language === 'bn' ? 'সেরা বিক্রিত পণ্য' : 'Best Selling Products'}
-        subtitle={language === 'bn' ? 'এই সপ্তাহের জনপ্রিয়' : 'Popular This Week'}
-        subtitleColor="text-orange-500"
-        products={trendingProductsList}
+      <Navigation
+        session={session}
+        categories={categories}
+        openCart={() => { }} // This will be connected to cart drawer
+        wishlistCount={wishCount}
+        onWishlistClick={() => { }} // This will be connected to wishlist page
+        compareCount={0}
+        onCompareClick={() => { }}
         settings={settings}
         theme={classicTheme}
       />
 
-      <PromoBanners
-        settings={settings}
-        banners={promoBanners}
-        theme={classicTheme}
-      />
+      <main>
+        {children}
+      </main>
 
-      <ProductSection
-        title={language === 'bn' ? 'নতুন কালেকশন' : 'New Collection'}
-        subtitle={language === 'bn' ? 'সদ্য আসা' : 'Just Arrived'}
-        subtitleColor="text-sky-500"
-        products={newProductsList}
+      <Footer
         settings={settings}
         theme={classicTheme}
       />
-
-      {/* Deal of Day / Limited Edition Section */}
-      {dealProducts.length > 0 && (
-        <ProductSection
-          title={language === 'bn' ? 'সীমিত সংস্করণ' : 'Limited Edition'}
-          subtitle={language === 'bn' ? 'অফার শেষ হওয়ার আগেই কিনুন' : 'Buy Before Offer Ends'}
-          subtitleColor="text-red-500"
-          products={dealProducts}
-          settings={settings}
-          theme={classicTheme}
-          showTimer={true}
-        />
-      )}
-
-      <Brands
-        settings={settings}
-        theme={classicTheme}
-      />
-
-      <WhyUs
-        settings={settings}
-        theme={classicTheme}
-      />
-
-      <Blog
-        settings={settings}
-        theme={classicTheme}
-      />
-
-      <Newsletter
-        settings={settings}
-        theme={classicTheme}
-      />
-    </>
+    </div>
   );
 }

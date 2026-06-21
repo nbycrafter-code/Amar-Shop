@@ -36,13 +36,14 @@ export default async function Home() {
     return p.section === "" || p.section === "none";
   });
   const limitedProducts = products.filter((p) => { return p.section == 'limited-edition' });
+  
 
 
   return (
     <>
       {settings.activeTheme === 'classic' ? (
         <>
-          <PetShop />
+          <PetShop settings={settings} sliders={sliders} products={trendingProducts} categories={categories} />
         </>
       ) : (
         <>

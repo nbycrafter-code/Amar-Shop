@@ -13,6 +13,7 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { cookies } from 'next/headers';
 import { getHomeSeoMetadata } from "@/lib/seo-metadata";
 import { JsonLd } from "../../components/JsonLd";
+import LayoutSetClassic from "./theme/classic/LayoutSetClassic";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -46,7 +47,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <LanguageProvider>
             <AppProvider>
               {settings.activeTheme === 'classic' ? (
-                children
+                <LayoutSetClassic session={session} settings={settings} categories={categories}>
+                  {children}
+                </LayoutSetClassic>
               ) : (
                 <LayoutSet session={session} settings={settings} categories={categories}>
                   {seoResult.jsonLd && <JsonLd data={seoResult.jsonLd} />}
