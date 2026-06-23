@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"siteName":{"$numberInt":"1"}},"name":"siteName_1"},{"v":{"$numberInt":"2"},"key":{"active":{"$numberInt":"1"}},"name":"active_1"}],"uuid":"2e3c1bb08a0e4b7792694a8ac6853528","collectionName":"settings","type":"collection"}
